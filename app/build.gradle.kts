@@ -4,86 +4,57 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":ext"))
     val libVersion: String by project
+
+    implementation(project(":ext"))
     compileOnly("dev.brahmkshatriya.echo:common:$libVersion")
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib:2.2.10")
+    compileOnly(kotlin("stdlib"))
 
     implementation(files("libs/ffmpeg-kit.aar"))
     implementation("com.arthenica:smart-exception-java:0.2.1")
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
+// --- version ---
+val verCode: Integer by project
+val verName: String by project
 
-kotlin {
-    jvmToolchain(17)
-}
-
+// --- metadata ---
 val extType: String by project
 val extId: String by project
-val extClass: String = "AndroidED"
-
-val extIconUrl: String? by project
 val extName: String by project
-val extDescription: String? by project
-
 val extAuthor: String by project
-val extAuthorUrl: String? by project
 
-val extRepoUrl: String? by project
-val extUpdateUrl: String? by project
-
-// val gitHash = execute("git", "rev-parse", "HEAD").take(7)
-// val gitCount = execute("git", "rev-list", "--count", "HEAD").toInt()
-val verCode = 001
-val verName = "v0.0.1"
-
-val outputDir = file("${layout.buildDirectory.asFile.get()}/generated/proguard")
-val generatedProguard = file("${outputDir}/generated-rules.pro")
-
-tasks.register("generateProguardRules") {
-    doLast {
-        outputDir.mkdirs()
-        generatedProguard.writeText(
-            """
-            -dontobfuscate
-            -keep,allowoptimization class dev.brahmkshatriya.echo.extension.$extClass
-            """.trimIndent()
-        )
-    }
-}
-
-tasks.named("preBuild") {
-    dependsOn("generateProguardRules")
-}
+val extClass = "AndroidED"
 
 android {
     namespace = "dev.brahmkshatriya.echo.extension"
-    compileSdk = 36
+
     defaultConfig {
         applicationId = "dev.brahmkshatriya.echo.extension.$extId"
-        minSdk = 24
-        targetSdk = 36
 
-        manifestPlaceholders.apply {
-            put("type", "dev.brahmkshatriya.echo.${extType}")
-            put("id", extId)
-            put("class_path", "dev.brahmkshatriya.echo.extension.${extClass}")
-            put("preserved_packages", "com.arthenica.ffmpegkit")
-            put("version", verName)
-            put("version_code", verCode.toString())
-            put("icon_url", extIconUrl ?: "")
-            put("app_name", "Echo : $extName Extension")
-            put("name", extName)
-            put("description", extDescription ?: "")
-            put("author", extAuthor)
-            put("author_url", extAuthorUrl ?: "")
-            put("repo_url", extRepoUrl ?: "")
-            put("update_url", extUpdateUrl ?: "")
-        }
+        versionCode = verCode
+        versionName = verName
+
+        manifestPlaceholders.putAll(
+            mapOf(
+                "type" to "dev.brahmkshatriya.echo.$extType",
+                "id" to extId,
+                "class_path" to "dev.brahmkshatriya.echo.extension.$extClass",
+                "version" to verName,
+                "version_code" to verCode.toString(),
+                "app_name" to "Echo : $extName Extension",
+                "name" to extName,
+                "author" to extAuthor
+            )
+        )
+    }
+
+    buildTypes.all {
+        isMinifyEnabled = true
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            "$buildDir/generated/proguard/generated-rules.pro"
+        )
     }
 
     splits {
@@ -94,18 +65,23 @@ android {
             isUniversalApk = false
         }
     }
+}
 
-    buildTypes {
-        all {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                generatedProguard.absolutePath
-            )
-        }
+val generatedProguard = layout.buildDirectory.file("generated/proguard/generated-rules.pro")
+
+tasks.register("generateProguardRules") {
+    doLast {
+        val file = generatedProguard.get().asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            -dontobfuscate
+            -keep class dev.brahmkshatriya.echo.extension.$extClass
+            """.trimIndent()
+        )
     }
 }
 
-fun execute(vararg command: String): String = providers.exec {
-    commandLine(*command)
-}.standardOutput.asText.get().trim()
+tasks.named("preBuild") {
+    dependsOn("generateProguardRules")
+}
