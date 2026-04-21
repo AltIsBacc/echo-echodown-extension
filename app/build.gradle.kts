@@ -1,50 +1,39 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("ext-convention")
 }
 
-dependencies {
-    val libVersion: String by project
+val meta = extensionMetadata()
 
+dependencies {
     implementation(project(":ext"))
-    compileOnly("dev.brahmkshatriya.echo:common:$libVersion")
+    compileOnly("dev.brahmkshatriya.echo:common:${property("libVersion")}")
     compileOnly(kotlin("stdlib"))
 
     implementation(files("libs/ffmpeg-kit.aar"))
     implementation("com.arthenica:smart-exception-java:0.2.1")
 }
 
-// --- version ---
-val verCode: Integer by project
-val verName: String by project
-
-// --- metadata ---
-val extType: String by project
-val extId: String by project
-val extName: String by project
-val extAuthor: String by project
-
-val extClass = "AndroidED"
-
 android {
     namespace = "dev.brahmkshatriya.echo.extension"
 
     defaultConfig {
-        applicationId = "dev.brahmkshatriya.echo.extension.$extId"
+        applicationId = "dev.brahmkshatriya.echo.extension.${meta.id}"
 
-        versionCode = verCode
-        versionName = verName
+        versionCode = meta.verCode
+        versionName = meta.verName
 
         manifestPlaceholders.putAll(
             mapOf(
-                "type" to "dev.brahmkshatriya.echo.$extType",
-                "id" to extId,
-                "class_path" to "dev.brahmkshatriya.echo.extension.$extClass",
-                "version" to verName,
-                "version_code" to verCode.toString(),
-                "app_name" to "Echo : $extName Extension",
-                "name" to extName,
-                "author" to extAuthor
+                "type"         to "dev.brahmkshatriya.echo.${meta.type}",
+                "id"           to meta.id,
+                "class_path"   to "dev.brahmkshatriya.echo.extension.${meta.className}",
+                "version"      to meta.verName,
+                "version_code" to meta.verCode.toString(),
+                "app_name"     to "Echo : ${meta.name} Extension",
+                "name"         to meta.name,
+                "author"       to meta.author,
             )
         )
     }
@@ -53,7 +42,7 @@ android {
         isMinifyEnabled = true
         proguardFiles(
             getDefaultProguardFile("proguard-android-optimize.txt"),
-            "$buildDir/generated/proguard/generated-rules.pro"
+            layout.buildDirectory.file("generated/proguard/generated-rules.pro").get().asFile.path
         )
     }
 
@@ -65,23 +54,4 @@ android {
             isUniversalApk = false
         }
     }
-}
-
-val generatedProguard = layout.buildDirectory.file("generated/proguard/generated-rules.pro")
-
-tasks.register("generateProguardRules") {
-    doLast {
-        val file = generatedProguard.get().asFile
-        file.parentFile.mkdirs()
-        file.writeText(
-            """
-            -dontobfuscate
-            -keep class dev.brahmkshatriya.echo.extension.$extClass
-            """.trimIndent()
-        )
-    }
-}
-
-tasks.named("preBuild") {
-    dependsOn("generateProguardRules")
 }

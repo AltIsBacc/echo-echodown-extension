@@ -31,14 +31,8 @@ class AndroidED : EDExtension() {
             .invoke(null) as Application
     }
 
-    private var disabledExt = ""
-
     override suspend fun onInitialize() {
-        runCatching {
-            disabledExt = Downloader.client.newCall(disabledReq).await().body.string()
-        }.getOrElse {
-            it.printStackTrace()
-        }
+        
     }
 
     private fun getDownloadDir(context: DownloadContext): File {
@@ -71,9 +65,6 @@ class AndroidED : EDExtension() {
         context: DownloadContext,
         source: Streamable.Source
     ): File {
-        if (disabledExt.contains(context.extensionId)) {
-            throw ClientException.NotSupported("${context.extensionId} download currently")
-        }
         isVideo = source.isVideo
         val file = getDownloadDir(context)
         return when (source) {

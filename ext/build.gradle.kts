@@ -5,49 +5,38 @@ plugins {
     id("com.gradleup.shadow") version "9.0.2"
 }
 
-dependencies {
-    val libVersion: String by project
+val meta = extensionMetadata()
 
-    compileOnly("dev.brahmkshatriya.echo:common:$libVersion")
+dependencies {
+    compileOnly("dev.brahmkshatriya.echo:common:${property("libVersion")}")
     compileOnly(kotlin("stdlib"))
 }
-
-// --- version ---
-val verCode: Integer by project
-val verName: String by project
-
-// --- metadata ---
-val extId: String by project
-val extType: String by project
-val extClass: String by project
-val extName: String by project
-val extAuthor: String by project
 
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             groupId = "dev.brahmkshatriya.echo.extension"
-            artifactId = extId
-            version = verName
+            artifactId = meta.id
+            version = meta.verName
             from(components["java"])
         }
     }
 }
 
 tasks.shadowJar {
-    archiveBaseName.set(extId)
-    archiveVersion.set(verName)
+    archiveBaseName.set(meta.id)
+    archiveVersion.set(meta.verName)
 
     manifest {
         attributes(
             mapOf(
-                "Extension-Id" to extId,
-                "Extension-Type" to extType,
-                "Extension-Class" to extClass,
-                "Extension-Version-Code" to verCode,
-                "Extension-Version-Name" to verName,
-                "Extension-Name" to extName,
-                "Extension-Author" to extAuthor
+                "Extension-Id"           to meta.id,
+                "Extension-Type"         to meta.type,
+                "Extension-Class"        to meta.className,
+                "Extension-Version-Code" to meta.verCode,
+                "Extension-Version-Name" to meta.verName,
+                "Extension-Name"         to meta.name,
+                "Extension-Author"       to meta.author,
             )
         )
     }
