@@ -17,10 +17,13 @@ dependencies {
 
 android {
     namespace = "dev.brahmkshatriya.echo.extension"
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.brahmkshatriya.echo.extension.${meta.id}"
-
+        minSdk = 24
+        targetSdk = 36
+        
         versionCode = meta.verCode
         versionName = meta.verName
 
@@ -34,6 +37,11 @@ android {
                 "app_name"     to "Echo : ${meta.name} Extension",
                 "name"         to meta.name,
                 "author"       to meta.author,
+                "icon_url"     to meta.iconUrl,
+                "description"  to meta.description,
+                "author_url"   to meta.authorUrl,
+                "repo_url"     to meta.repoUrl,
+                "update_url"   to meta.updateUrl,
             )
         )
     }
