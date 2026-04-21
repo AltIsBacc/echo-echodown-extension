@@ -39,10 +39,10 @@ val extAuthorUrl: String? by project
 val extRepoUrl: String? by project
 val extUpdateUrl: String? by project
 
-val gitHash = execute("git", "rev-parse", "HEAD").take(7)
-val gitCount = execute("git", "rev-list", "--count", "HEAD").toInt()
-val verCode = gitCount
-val verName = "v$gitHash"
+// val gitHash = execute("git", "rev-parse", "HEAD").take(7)
+// val gitCount = execute("git", "rev-list", "--count", "HEAD").toInt()
+val verCode = 001
+val verName = "v0.0.1"
 
 publishing {
     publications {
