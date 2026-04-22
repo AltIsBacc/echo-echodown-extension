@@ -46,12 +46,18 @@ android {
         )
     }
 
-    buildTypes.all {
-        isMinifyEnabled = true
-        proguardFiles(
-            getDefaultProguardFile("proguard-android-optimize.txt"),
-            layout.buildDirectory.file("generated/proguard/generated-rules.pro").get().asFile.path
-        )
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                layout.buildDirectory.file("generated/proguard/generated-rules.pro").get().asFile.path
+            )
+        }
+
+        debug {
+            isMinifyEnabled = false
+        }
     }
 
     splits {
