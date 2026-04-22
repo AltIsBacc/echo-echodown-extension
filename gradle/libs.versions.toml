@@ -1,0 +1,16 @@
+[versions]
+kotlin          = "2.2.10"
+agp             = "8.9.3"
+shadow          = "9.0.2"
+smart-exception = "0.2.1"
+echo-lib        = "1.0"
+
+[libraries]
+echo-common          = { module = "dev.brahmkshatriya.echo:common",          version.ref = "echo-lib" }
+kotlin-stdlib        = { module = "org.jetbrains.kotlin:kotlin-stdlib" }
+smart-exception-java = { module = "com.arthenica:smart-exception-java",       version.ref = "smart-exception" }
+agp                  = { module = "com.android.tools.build:gradle",           version.ref = "agp" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

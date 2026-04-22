@@ -2,15 +2,15 @@ plugins {
     id("java-library")
     id("org.jetbrains.kotlin.jvm")
     id("maven-publish")
-    id("com.gradleup.shadow") version "9.0.2"
+    alias(libs.plugins.shadow)
     id("ext-convention")
 }
 
 val meta = extensionMetadata()
 
 dependencies {
-    compileOnly("dev.brahmkshatriya.echo:common:${property("libVersion")}")
-    compileOnly(kotlin("stdlib"))
+    compileOnly(libs.echo.common)
+    compileOnly(libs.kotlin.stdlib)
 }
 
 publishing {

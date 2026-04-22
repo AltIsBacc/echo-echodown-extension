@@ -5,7 +5,9 @@ import android.app.Application
 import android.os.Environment
 import dev.brahmkshatriya.echo.common.helpers.ClientException
 import dev.brahmkshatriya.echo.common.helpers.ContinuationCallback.Companion.await
+import dev.brahmkshatriya.echo.common.models.Album
 import dev.brahmkshatriya.echo.common.models.DownloadContext
+import dev.brahmkshatriya.echo.common.models.EchoMediaItem
 import dev.brahmkshatriya.echo.common.models.Progress
 import dev.brahmkshatriya.echo.common.models.Streamable
 import dev.brahmkshatriya.echo.common.settings.Setting
@@ -26,6 +28,10 @@ import java.io.File
 @SuppressLint("PrivateApi")
 class AndroidED : EDExtension() {
 
+    val manifestManager by lazy {
+        ManifestManager(File(contextApp.cacheDir, "Echo"))
+    }
+
     private val contextApp by lazy {
         Class.forName("android.app.ActivityThread").getMethod("currentApplication")
             .invoke(null) as Application
@@ -35,12 +41,36 @@ class AndroidED : EDExtension() {
         
     }
 
-    private fun getDownloadDir(context: DownloadContext): File {
-        val parentFolderName = context.context?.title
-        val sanitizedParent = illegalReplace(parentFolderName.orEmpty())
-        val folder = if (sanitizedParent.isNotBlank()) "Echo/$sanitizedParent" else "Echo"
-        val targetDirectory = File(contextApp.cacheDir, folder).apply { mkdirs() }
-        return targetDirectory
+    override suspend fun getDownloadTracks(
+        extensionId: String,
+        item: EchoMediaItem,
+        context: EchoMediaItem?
+    ): List<DownloadContext> {
+        val all = super.getDownloadTracks(extensionId, item, context)
+        if (item is EchoMediaItem.Lists) {
+            return all.filter { ctx ->
+                val alreadyHave = manifestManager.trackExists(extensionId, ctx.track.id)
+                if (alreadyHave) {
+                    val contextItem = ctx.context
+                    if (contextItem != null) {
+                        manifestManager.recordTrackInManifest(
+                            extensionId = extensionId,
+                            contextId = contextItem.id,
+                            contextTitle = contextItem.title,
+                            contextType = contextItem.toManifestType(),
+                            trackKey = DownloadManifest.trackKey(extensionId, ctx.track.id),
+                            sortOrder = ctx.sortOrder
+                        )
+                    }
+                }
+                !alreadyHave
+            }
+        }
+        return all
+    }
+
+    private fun getDownloadFile(extensionId: String, trackId: String): File {
+        return File(manifestManager.tracksDir, "tmp_${DownloadManifest.trackKey(extensionId, trackId)}")
     }
 
     override suspend fun selectServer(context: DownloadContext): Streamable {
@@ -66,7 +96,7 @@ class AndroidED : EDExtension() {
         source: Streamable.Source
     ): File {
         isVideo = source.isVideo
-        val file = getDownloadDir(context)
+        val file = getDownloadFile(context.extensionId, context.track.id)
         return when (source) {
             is Streamable.Source.Raw -> {
                 val preFile = File(file.parent, "${source.hashCode()}.${if (isVideo) "mp4" else "mp3"}")
@@ -79,7 +109,7 @@ class AndroidED : EDExtension() {
                         streamProvider.second
                     )
                 } else {
-                    throw Exception("Streamprovider is null")
+                    throw Exception("Streamprover is null")
                 }
             }
 
@@ -87,7 +117,7 @@ class AndroidED : EDExtension() {
                 if(source.isLive) throw ClientException.NotSupported("Streams aren't supported")
                 when (val decryption = source.decryption) {
                     null -> {
-                        val preFile = File(file.parent, "${source.request.hashCode()}.mp4")
+                        val preFile = File(manifestManager.tracksDir, "${source.request.hashCode()}.mp4")
                         httpDownload.httpDownload(
                             preFile,
                             progressFlow,
@@ -124,7 +154,24 @@ class AndroidED : EDExtension() {
                 else -> Environment.DIRECTORY_DOWNLOADS
             }
         )
-        return tag.tag(progressFlow, context, file, downloadsDir)
+        val finalFile = tag.tag(progressFlow, context, file, downloadsDir)
+
+        val contextItem = context.context
+        val extensionId = context.extensionId
+        val trackKey = DownloadManifest.trackKey(extensionId, context.track.id)
+
+        if (contextItem != null) {
+            manifestManager.recordTrackInManifest(
+                extensionId = extensionId,
+                contextId = contextItem.id,
+                contextTitle = contextItem.title,
+                contextType = contextItem.toManifestType(),
+                trackKey = trackKey,
+                sortOrder = context.sortOrder
+            )
+        }
+
+        return finalFile
     }
 
     private var _settings: Settings? = null
@@ -275,6 +322,11 @@ class AndroidED : EDExtension() {
         private val disabledReq = Request.Builder().url("https://raw.githubusercontent.com/LuftVerbot/echo-echodown-extension/refs/heads/main/disabledExt.txt").build()
 
         fun illegalReplace(w: String): String = illegalChars.replace(w, "_")
+
+        fun EchoMediaItem.toManifestType(): DownloadManifest.ContextType = when (this) {
+            is Album -> DownloadManifest.ContextType.ALBUM
+            else -> DownloadManifest.ContextType.PLAYLIST
+        }
 
         // For Shivam: Copy my homework but don't make it obvious
         private fun <E> List<E>.selectQuality(setQuality: String, quality: (E) -> Int): E {

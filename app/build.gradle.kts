@@ -8,11 +8,11 @@ val meta = extensionMetadata()
 
 dependencies {
     implementation(project(":ext"))
-    compileOnly("dev.brahmkshatriya.echo:common:${property("libVersion")}")
-    compileOnly(kotlin("stdlib"))
+    compileOnly(libs.echo.common)
+    compileOnly(libs.kotlin.stdlib)
 
     implementation(files("libs/ffmpeg-kit.aar"))
-    implementation("com.arthenica:smart-exception-java:0.2.1")
+    implementation(libs.smart.exception.java)
 }
 
 android {

@@ -17,6 +17,7 @@ import dev.brahmkshatriya.echo.common.models.Progress
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.brahmkshatriya.echo.extension.AndroidED
 import dev.brahmkshatriya.echo.extension.AndroidED.Companion.illegalReplace
+import dev.brahmkshatriya.echo.extension.DownloadManifest
 import dev.brahmkshatriya.echo.extension.Downloader.okHttpDownload
 import dev.brahmkshatriya.echo.extension.EDExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDExtension.Companion.getExtension
@@ -57,13 +58,12 @@ class Tag(
             }
             progressFlow.emit(Progress(4, progress = 1))
 
-            val coverFile = saveCoverBitmap(file,context.track)
+            val coverFile = saveCoverBitmap(file, context.track)
             progressFlow.emit(Progress(4, progress = 2))
 
             val lyrics = androidED.run {
                 getActualLyrics(context, downLyrics, syncLyrics, downFallbackLyrics, extension)
             }
-
             progressFlow.emit(Progress(4, progress = 3))
 
             writeTags(
@@ -72,7 +72,6 @@ class Tag(
                 track,
                 coverFile,
                 lyrics,
-                downloadsDir,
                 album,
                 extension
             )
@@ -89,7 +88,6 @@ class Tag(
         track: Track,
         coverFile: File?,
         lyrics: Lyrics?,
-        downloadsDir: File,
         album: Album?,
         extension: Extension<*>?,
         hasCover: Boolean = false
@@ -112,45 +110,17 @@ class Tag(
         val extName = extension?.name.orEmpty()
 
         val finalFile = runCatching {
-            val preFile = ffmpegTag(file, context, track, coverFile, lyricsText, fileExtension, album, extName, hasCover)
-            rename(context, downloadsDir, preFile, track)
+            ffmpegTag(file, context, track, coverFile, lyricsText, fileExtension, album, extName, hasCover)
         }.getOrElse { e ->
             val eString = e.toString()
             if (eString.contains("JPEG-LS support not enabled")) {
-                writeTags(file, context, track, coverFile, lyrics, downloadsDir, album, extension, true)
+                writeTags(file, context, track, coverFile, lyrics, album, extension, true)
             } else {
                 coverFile?.delete()
                 throw e
             }
         }
         return finalFile
-    }
-
-    private fun rename(
-        context: DownloadContext,
-        downloadsDir: File,
-        preFile: File,
-        track: Track
-    ): File {
-        val parentFolderName = context.context?.title
-        val sanitizedParent = illegalReplace(parentFolderName.orEmpty())
-        val folder = if (sanitizedParent.isNotBlank()) {
-            "${androidED.folderStructure}$sanitizedParent"
-        } else if (androidED.albumFolder) {
-            "${androidED.folderStructure}${illegalReplace(track.album?.title.orEmpty())}"
-        } else {
-            "Echo/"
-        }
-        val targetDirectory = File(downloadsDir, folder).apply { mkdirs() }
-        var targetFile = File(targetDirectory, preFile.name)
-        var count = 0
-        while (targetFile.exists()) {
-            count++
-            targetFile = File(targetDirectory, "$count ${preFile.name}")
-        }
-        preFile.copyTo(targetFile)
-        preFile.delete()
-        return targetFile
     }
 
     private suspend fun ffmpegTag(
@@ -250,7 +220,21 @@ class Tag(
         if (file.delete()) outputFile.renameTo(file)
 
         coverFile?.delete()
-        return file
+
+        // Rename to "{Artist1, Artist2} - {Title}_{trackId}.{ext}"
+        // The _trackId suffix guarantees uniqueness for remixes/live versions.
+        val artists = context.track.artists
+            .joinToString(", ") { illegalReplace(it.name) }
+            .ifBlank { "Unknown Artist" }
+        val title = illegalReplace(context.track.title).ifBlank { context.track.id }
+        val trackId = DownloadManifest.sanitize(context.track.id)
+        val stableFile = File(file.parentFile!!, "$artists - ${title}_${trackId}.$fileExtension")
+        if (!file.renameTo(stableFile)) {
+            file.copyTo(stableFile, overwrite = true)
+            file.delete()
+        }
+
+        return stableFile
     }
 
     private suspend fun loadAlbum(

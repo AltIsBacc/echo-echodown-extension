@@ -22,6 +22,6 @@ tasks.withType<KotlinCompile>().configureEach {
 }
 
 dependencies {
-    implementation("com.android.tools.build:gradle:8.9.3")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10")
+    implementation(libs.agp)
+    implementation(libs.kotlin.gradle.plugin)
 }
