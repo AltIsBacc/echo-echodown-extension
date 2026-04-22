@@ -12,7 +12,6 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "mathiasfrohlich.Kotlin",       // Kotlin syntax & language support
                 "jetbrains.kotlin-lsp-vscode",  // Official JetBrains Kotlin LSP
                 "jetbrains.java-to-kotlin-vsc"  // JetBrains Java-to-Kotlin converter
             ]
