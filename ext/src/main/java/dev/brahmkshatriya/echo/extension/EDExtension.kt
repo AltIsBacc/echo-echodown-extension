@@ -58,8 +58,6 @@ abstract class EDExtension : DownloadClient, MusicExtensionsProvider, LyricsExte
                 DownloadContext(extensionId, track, index, item)
             }
         }
-
-        else -> listOf()
     }
 
     companion object {
