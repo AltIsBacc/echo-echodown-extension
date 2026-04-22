@@ -1,0 +1,24 @@
+{
+    "name": "Java & Kotlin",
+    "image": "mcr.microsoft.com/devcontainers/base:debian",
+    "features": {
+        "ghcr.io/devcontainers/features/java:1": {
+            "version": "25.0.2",
+            "installMaven": "false",
+            "installGradle": "true",
+            "jdkDistro": "tem"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "mathiasfrohlich.Kotlin",       // Kotlin syntax & language support
+                "jetbrains.kotlin-lsp-vscode",  // Official JetBrains Kotlin LSP
+                "jetbrains.java-to-kotlin-vsc"  // JetBrains Java-to-Kotlin converter
+            ]
+        }
+    },
+    "containerEnv": {
+        "_JAVA_OPTIONS": "-XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:+UseSerialGC -Xms512m"
+    }
+}
