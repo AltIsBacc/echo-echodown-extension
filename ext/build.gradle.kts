@@ -6,11 +6,12 @@ plugins {
     id("ext-convention")
 }
 
-val meta = extensionMetadata()
+val meta = extensionMetadata(extClassName = "EDExtension")
 
 dependencies {
     compileOnly(libs.echo.common)
     compileOnly(libs.kotlin.stdlib)
+    compileOnly(libs.org.json)
 }
 
 publishing {

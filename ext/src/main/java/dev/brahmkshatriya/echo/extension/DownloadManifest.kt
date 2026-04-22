@@ -1,8 +1,7 @@
 package dev.brahmkshatriya.echo.extension
 
-import org.json.simple.JSONArray
-import org.json.simple.JSONObject
-import org.json.simple.parser.JSONParser
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Represents a persisted playlist/album manifest on disk.
@@ -27,49 +26,40 @@ data class DownloadManifest(
     /** Stable filename for this manifest. */
     fun fileName() = "${extensionId}_${sanitize(id)}.json"
 
-    @Suppress("UNCHECKED_CAST")
-    fun toJson(): String {
-        val root = JSONObject()
-        root["id"] = id
-        root["extensionId"] = extensionId
-        root["title"] = title
-        root["type"] = type.name
-        root["lastSynced"] = lastSynced
-        val arr = JSONArray()
-        tracks.forEach { t ->
-            val obj = JSONObject()
-            obj["trackId"] = t.trackId
-            obj["sortOrder"] = t.sortOrder
-            obj["addedAt"] = t.addedAt
-            arr.add(obj)
-        }
-        root["tracks"] = arr
-        return root.toJSONString()
-    }
+    fun toJson(): String = JSONObject()
+        .put("id", id)
+        .put("extensionId", extensionId)
+        .put("title", title)
+        .put("type", type.name)
+        .put("lastSynced", lastSynced)
+        .put("tracks", JSONArray(tracks.map { t ->
+            JSONObject()
+                .put("trackId", t.trackId)
+                .put("sortOrder", t.sortOrder)
+                .put("addedAt", t.addedAt)
+        }))
+        .toString()
 
     companion object {
         private val ILLEGAL = "[/\\\\:*?\"<>|]".toRegex()
         fun sanitize(s: String) = ILLEGAL.replace(s, "_")
 
-        @Suppress("UNCHECKED_CAST")
         fun fromJson(json: String): DownloadManifest {
-            val parser = JSONParser()
-            val root = parser.parse(json) as JSONObject
-            val arr = root["tracks"] as JSONArray
-            val tracks = arr.map { item ->
+            val root = JSONObject(json)
+            val tracks = root.getJSONArray("tracks").map { item ->
                 val obj = item as JSONObject
                 ManifestTrack(
-                    trackId = obj["trackId"] as String,
-                    sortOrder = (obj["sortOrder"] as? Long)?.toInt(),
-                    addedAt = obj["addedAt"] as Long
+                    trackId = obj.getString("trackId"),
+                    sortOrder = obj.optInt("sortOrder").takeUnless { obj.isNull("sortOrder") },
+                    addedAt = obj.getLong("addedAt")
                 )
             }
             return DownloadManifest(
-                id = root["id"] as String,
-                extensionId = root["extensionId"] as String,
-                title = root["title"] as String,
-                type = ContextType.valueOf(root["type"] as String),
-                lastSynced = root["lastSynced"] as Long,
+                id = root.getString("id"),
+                extensionId = root.getString("extensionId"),
+                title = root.getString("title"),
+                type = ContextType.valueOf(root.getString("type")),
+                lastSynced = root.getLong("lastSynced"),
                 tracks = tracks
             )
         }

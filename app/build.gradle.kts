@@ -1,10 +1,10 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("ext-convention")
 }
 
-val meta = extensionMetadata()
+val meta = extensionMetadata(extClassName = "AndroidED")
+val proguardTask = generateProguardRules(meta)
 
 dependencies {
     implementation(project(":ext"))
@@ -62,4 +62,8 @@ android {
             isUniversalApk = false
         }
     }
+}
+
+tasks.named("preBuild") {
+    dependsOn(proguardTask)
 }
