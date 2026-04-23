@@ -8,7 +8,7 @@ import dev.brahmkshatriya.echo.extension.models.TrackQuality
 /**
  * Pure utility functions shared across the entire common module.
  */
-object Utils {
+object EDLUtils {
     /** Characters that are illegal in most filesystem paths. */
     private val illegalChars = "[/\\\\:*?\"<>|]".toRegex()
 

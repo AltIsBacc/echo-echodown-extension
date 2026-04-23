@@ -2,7 +2,7 @@ package dev.brahmkshatriya.echo.extension.models
 
 import org.json.JSONArray
 import org.json.JSONObject
-import dev.brahmkshatriya.echo.extension.Utils
+import dev.brahmkshatriya.echo.extension.EDLUtils
 
 /**
  * Persisted playlist/album manifest.
@@ -29,7 +29,7 @@ data class DownloadManifest(
     enum class ContextType { PLAYLIST, ALBUM, RADIO }
 
     /** Stable filename for this manifest on disk. */
-    fun fileName() = "${extensionId}_${Utils.illegalReplace(id)}.json"
+    fun fileName() = "${extensionId}_${EDLUtils.illegalReplace(id)}.json"
 
     fun toJson(): String = JSONObject()
         .put("id", id)
@@ -73,6 +73,6 @@ data class DownloadManifest(
          * used as the primary identifierbin manifests and as the suffix of audio filenames.
          */
         fun trackKey(extensionId: String, trackId: String): String =
-            "${extensionId}_${Utils.illegalReplace(trackId)}"
+            "${extensionId}_${EDLUtils.illegalReplace(trackId)}"
     }
 }

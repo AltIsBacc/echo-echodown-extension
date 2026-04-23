@@ -13,7 +13,7 @@ import dev.brahmkshatriya.echo.common.models.Track
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.getExtension
 import dev.brahmkshatriya.echo.extension.HttpStreamUtil
-import dev.brahmkshatriya.echo.extension.Utils.illegalReplace
+import dev.brahmkshatriya.echo.extension.EDLUtils.illegalReplace
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
@@ -78,7 +78,7 @@ class TagTask(
                 extensionId = context.extensionId,
                 contextId = contextItem.id,
                 contextTitle = contextItem.title,
-                contextType = dev.brahmkshatriya.echo.extension.Utils.run {
+                contextType = dev.brahmkshatriya.echo.extension.EDLUtils.run {
                     contextItem.toManifestType()
                 },
                 trackKey = DownloadManifest.trackKey(context.extensionId, context.track.id),

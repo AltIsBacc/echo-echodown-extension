@@ -2,7 +2,7 @@ package dev.brahmkshatriya.echo.extension.pipeline
 
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
-import dev.brahmkshatriya.echo.extension.Utils.toManifestType
+import dev.brahmkshatriya.echo.extension.EDLUtils.toManifestType
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
 

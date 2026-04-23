@@ -4,7 +4,7 @@ import dev.brahmkshatriya.echo.common.helpers.ClientException
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.Progress
 import dev.brahmkshatriya.echo.common.models.Streamable
-import dev.brahmkshatriya.echo.extension.Utils.select
+import dev.brahmkshatriya.echo.extension.EDLUtils.select
 import dev.brahmkshatriya.echo.extension.platform.IDownloader
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
 import kotlinx.coroutines.flow.MutableStateFlow

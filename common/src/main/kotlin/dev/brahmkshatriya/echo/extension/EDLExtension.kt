@@ -176,6 +176,22 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         else -> emptyList()
     }
 
+    override suspend fun merge(
+        progressFlow: MutableStateFlow<Progress>,
+        context: DownloadContext,
+        files: List<File>
+    ): File {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun tag(
+        progressFlow: MutableStateFlow<Progress>,
+        context: DownloadContext,
+        file: File
+    ): File {
+        TODO("Not yet implemented")
+    }
+
     companion object {
         fun List<Extension<*>>.getExtension(id: String?) = firstOrNull { it.id == id }
 

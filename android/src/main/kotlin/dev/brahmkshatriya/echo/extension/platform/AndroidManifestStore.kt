@@ -1,6 +1,7 @@
 package dev.brahmkshatriya.echo.extension.platform
 
 import android.os.FileObserver
+import dev.brahmkshatriya.echo.extension.EDLUtils
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackManifest
@@ -82,7 +83,7 @@ class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
     }
 
     override fun trackExists(extensionId: String, trackId: String): Boolean {
-        val idSuffix = "_${Utils.illegalReplace(trackId)}"
+        val idSuffix = "_${EDLUtils.illegalReplace(trackId)}"
         return tracksDir.listFiles { f ->
             f.nameWithoutExtension.endsWith(idSuffix)
                 && f.extension in AUDIO_EXTENSIONS

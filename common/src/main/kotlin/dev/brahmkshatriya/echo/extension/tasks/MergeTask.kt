@@ -2,7 +2,7 @@ package dev.brahmkshatriya.echo.extension.tasks
 
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.Progress
-import dev.brahmkshatriya.echo.extension.Utils.illegalReplace
+import dev.brahmkshatriya.echo.extension.EDLUtils.illegalReplace
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
 import dev.brahmkshatriya.echo.extension.platform.ITask
