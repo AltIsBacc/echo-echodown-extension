@@ -7,10 +7,10 @@ val meta = extensionMetadata(extClassName = "AndroidED")
 val proguardTask = generateProguardRules(meta)
 
 dependencies {
-    implementation(project(":ext"))
     compileOnly(libs.echo.common)
     compileOnly(libs.kotlin.stdlib)
 
+    implementation(project(":common"))
     implementation(files("libs/ffmpeg-kit.aar"))
     implementation(libs.smart.exception.java)
 }

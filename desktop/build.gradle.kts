@@ -1,17 +1,15 @@
 plugins {
+    alias(libs.plugins.shadow)
     id("java-library")
     id("org.jetbrains.kotlin.jvm")
     id("maven-publish")
-    alias(libs.plugins.shadow)
     id("ext-convention")
 }
 
-val meta = extensionMetadata(extClassName = "EDExtension")
+val meta = extensionMetadata(extClassName = "DesktopEntrypoint")
 
 dependencies {
-    compileOnly(libs.echo.common)
-    compileOnly(libs.kotlin.stdlib)
-    compileOnly(libs.org.json)
+    implementation(project(":common"))
 }
 
 publishing {
