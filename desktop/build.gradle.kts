@@ -6,7 +6,7 @@ plugins {
     id("ext-convention")
 }
 
-val meta = extensionMetadata(extClassName = "DesktopEntrypoint")
+val meta = extensionMetadata(extClassName = "DesktopEDLExtension")
 
 dependencies {
     implementation(project(":common"))

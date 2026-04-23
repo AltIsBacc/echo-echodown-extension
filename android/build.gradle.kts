@@ -3,7 +3,7 @@ plugins {
     id("ext-convention")
 }
 
-val meta = extensionMetadata(extClassName = "AndroidEntrypoint")
+val meta = extensionMetadata(extClassName = "AndroidEDLExtension")
 val proguardTask = generateProguardRules(meta)
 
 dependencies {

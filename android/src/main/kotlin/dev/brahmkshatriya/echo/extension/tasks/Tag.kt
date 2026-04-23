@@ -15,8 +15,8 @@ import dev.brahmkshatriya.echo.common.models.ImageHolder.Companion.toImageHolder
 import dev.brahmkshatriya.echo.common.models.Lyrics
 import dev.brahmkshatriya.echo.common.models.Progress
 import dev.brahmkshatriya.echo.common.models.Track
-import dev.brahmkshatriya.echo.extension.AndroidEntrypoint
-import dev.brahmkshatriya.echo.extension.AndroidEntrypoint.Companion.illegalReplace
+import dev.brahmkshatriya.echo.extension.AndroidEDLExtension
+import dev.brahmkshatriya.echo.extension.AndroidEDLExtension.Companion.illegalReplace
 import dev.brahmkshatriya.echo.extension.DownloadManifest
 import dev.brahmkshatriya.echo.extension.Downloader.okHttpDownload
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
@@ -31,7 +31,7 @@ import java.nio.ByteOrder
 import kotlin.io.encoding.Base64
 
 class Tag(
-    private val androidED: AndroidEntrypoint
+    private val androidED: AndroidEDLExtension
 ) {
     private val musicExtensions
         get() = androidED.musicExtensionList

@@ -2,7 +2,7 @@ package dev.brahmkshatriya.echo.extension.tasks
 
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.Progress
-import dev.brahmkshatriya.echo.extension.AndroidEntrypoint.Companion.illegalReplace
+import dev.brahmkshatriya.echo.extension.AndroidEDLExtension.Companion.illegalReplace
 import dev.brahmkshatriya.echo.extension.FFMpegHelper
 import kotlinx.coroutines.flow.MutableSharedFlow
 import java.io.File
