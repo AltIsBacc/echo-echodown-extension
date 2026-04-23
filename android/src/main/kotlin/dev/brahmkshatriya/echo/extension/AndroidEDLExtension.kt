@@ -17,19 +17,18 @@ import dev.brahmkshatriya.echo.common.settings.SettingSlider
 import dev.brahmkshatriya.echo.common.settings.SettingSwitch
 import dev.brahmkshatriya.echo.common.settings.SettingTextInput
 import dev.brahmkshatriya.echo.common.settings.Settings
-import dev.brahmkshatriya.echo.extension.downloaders.HttpDownload
-import dev.brahmkshatriya.echo.extension.downloaders.InputStreamDownload
-import dev.brahmkshatriya.echo.extension.tasks.Merge
-import dev.brahmkshatriya.echo.extension.tasks.Tag
+import dev.brahmkshatriya.echo.extension.Utils
+import dev.brahmkshatriya.echo.extension.downloaders.DownloadSource
+import dev.brahmkshatriya.echo.extension.downloaders.Downloader
+import dev.brahmkshatriya.echo.extension.platform.AndroidCodecEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.Request
 import java.io.File
 
 @SuppressLint("PrivateApi")
 class AndroidEDLExtension : EDLExtension() {
-
-    val manifestManager by lazy {
-        ManifestManager(File(contextApp.cacheDir, "Echo"))
+    val manifestStore by lazy {
+        AndroidManifestStore(File(contextApp.cacheDir, "Echo"))
     }
 
     private val contextApp by lazy {
@@ -38,7 +37,7 @@ class AndroidEDLExtension : EDLExtension() {
     }
 
     override suspend fun onInitialize() {
-        
+        manifestStore.start()
     }
 
     override suspend fun getDownloadTracks(
@@ -49,11 +48,11 @@ class AndroidEDLExtension : EDLExtension() {
         val all = super.getDownloadTracks(extensionId, item, context)
         if (item is EchoMediaItem.Lists) {
             return all.filter { ctx ->
-                val alreadyHave = manifestManager.trackExists(extensionId, ctx.track.id)
+                val alreadyHave = manifestStore.trackExists(extensionId, ctx.track.id)
                 if (alreadyHave) {
                     val contextItem = ctx.context
                     if (contextItem != null) {
-                        manifestManager.recordTrackInManifest(
+                        manifestStore.recordTrackInManifest(
                             extensionId = extensionId,
                             contextId = contextItem.id,
                             contextTitle = contextItem.title,
@@ -70,7 +69,7 @@ class AndroidEDLExtension : EDLExtension() {
     }
 
     private fun getDownloadFile(extensionId: String, trackId: String): File {
-        return File(manifestManager.tracksDir, "tmp_${DownloadManifest.trackKey(extensionId, trackId)}")
+        return File(manifestStore.tracksDir, "tmp_${DownloadManifest.trackKey(extensionId, trackId)}")
     }
 
     override suspend fun selectServer(context: DownloadContext): Streamable {
@@ -85,8 +84,7 @@ class AndroidEDLExtension : EDLExtension() {
         return sources
     }
 
-    private val inputStreamDownload by lazy { InputStreamDownload() }
-    private val httpDownload by lazy { HttpDownload() }
+    private val downloader by lazy { Downloader(AndroidCodecEngine) }
 
     private var isVideo: Boolean = false
 
@@ -99,31 +97,23 @@ class AndroidEDLExtension : EDLExtension() {
         val file = getDownloadFile(context.extensionId, context.track.id)
         return when (source) {
             is Streamable.Source.Raw -> {
-                val preFile = File(file.parent, "${source.hashCode()}.${if (isVideo) "mp4" else "mp3"}")
                 val streamProvider = source.streamProvider?.provide(0, -1)
-                if (streamProvider != null) {
-                    inputStreamDownload.inputStreamDownload(
-                        preFile,
-                        progressFlow,
-                        streamProvider.first,
-                        streamProvider.second
-                    )
-                } else {
-                    throw Exception("Streamprover is null")
-                }
+                    ?: throw Exception("Stream provider is null")
+                downloader.download(
+                    getDownloadFile(context.extensionId, context.track.id),
+                    progressFlow,
+                    DownloadSource.Stream(streamProvider.first, streamProvider.second)
+                )
             }
 
             is Streamable.Source.Http -> {
-                if(source.isLive) throw ClientException.NotSupported("Streams aren't supported")
+                if (source.isLive) throw ClientException.NotSupported("Streams aren't supported")
                 when (val decryption = source.decryption) {
-                    null -> {
-                        val preFile = File(manifestManager.tracksDir, "${source.request.hashCode()}.mp4")
-                        httpDownload.httpDownload(
-                            preFile,
-                            progressFlow,
-                            source
-                        )
-                    }
+                    null -> downloader.download(
+                        getDownloadFile(context.extensionId, context.track.id),
+                        progressFlow,
+                        DownloadSource.Http(source)
+                    )
 
                     is Streamable.Decryption.Widevine -> {
                         TODO("Not shown for this repos & my safety")
@@ -140,7 +130,7 @@ class AndroidEDLExtension : EDLExtension() {
         progressFlow: MutableStateFlow<Progress>,
         context: DownloadContext,
         files: List<File>
-    ): File = merge.merge(progressFlow, context, files, trackNum, isVideo)
+    ): File = Merge.merge(progressFlow, context, files, trackNum, isVideo, AndroidCodecEngine)
 
     override suspend fun tag(
         progressFlow: MutableStateFlow<Progress>,
@@ -161,7 +151,7 @@ class AndroidEDLExtension : EDLExtension() {
         val trackKey = DownloadManifest.trackKey(extensionId, context.track.id)
 
         if (contextItem != null) {
-            manifestManager.recordTrackInManifest(
+            manifestStore.recordTrackInManifest(
                 extensionId = extensionId,
                 contextId = contextItem.id,
                 contextTitle = contextItem.title,
@@ -320,28 +310,5 @@ class AndroidEDLExtension : EDLExtension() {
         private val illegalChars = "[/\\\\:*?\"<>|]".toRegex()
 
         private val disabledReq = Request.Builder().url("https://raw.githubusercontent.com/LuftVerbot/echo-echodown-extension/refs/heads/main/disabledExt.txt").build()
-
-        fun illegalReplace(w: String): String = illegalChars.replace(w, "_")
-
-        fun EchoMediaItem.toManifestType(): DownloadManifest.ContextType = when (this) {
-            is Album -> DownloadManifest.ContextType.ALBUM
-            else -> DownloadManifest.ContextType.PLAYLIST
-        }
-
-        // For Shivam: Copy my homework but don't make it obvious
-        private fun <E> List<E>.selectQuality(setQuality: String, quality: (E) -> Int): E {
-            return when (setQuality) {
-                in "0" -> this.maxByOrNull { quality(it) } ?: first()
-                in "1" -> sortedBy { quality(it) }[size / 2]
-                in "2" -> this.minByOrNull { quality(it) } ?: first()
-                else -> first()
-            }
-        }
-
-        private fun List<Streamable>.select(setQuality: String) =
-            selectQuality(setQuality) { it.quality }
-
-        private fun List<Streamable.Source>.select(setQuality: String) =
-            selectQuality(setQuality) { it.quality }
     }
 }

@@ -1,4 +1,4 @@
-package dev.brahmkshatriya.echo.extension
+package dev.brahmkshatriya.echo.extension.platform
 
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegSession
@@ -10,18 +10,16 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-object FFMpegHelper {
+object AndroidCodecEngine : CodecEngine {
 
-    suspend fun execute(
-        command: String,
-        onLog: (String?) -> Unit = {},
-        onStats: (Statistics) -> Unit = {}
-    ): FFmpegSession = suspendCancellableCoroutine { cont ->
+    override suspend fun executeCommand(
+        command: String
+    ): String = suspendCancellableCoroutine { cont ->
         val session = FFmpegKit.executeAsync(command, {
             println("FFmpeg Complete: $it")
-            if (it.returnCode.isValueSuccess) cont.resume(it)
+            if (it.returnCode.isValueSuccess) cont.resume(it.output.orEmpty())
             else cont.resumeWithException(Exception(it.output))
-        }, { onLog(it.message) }, { onStats(it) })
+        })
         cont.invokeOnCancellation { session.cancel() }
     }
 
@@ -36,7 +34,7 @@ object FFMpegHelper {
         cont.invokeOnCancellation { session.cancel() }
     }
 
-    suspend fun probeFileFormat(file: File, isVideo: Boolean): String {
+    override suspend fun probeFormat(file: File, isVideo: Boolean): String {
         val ffprobeCommand =
             "-v error -show_entries format=format_name -of default=noprint_wrappers=1:nokey=1 \"${file.absolutePath}\""
 

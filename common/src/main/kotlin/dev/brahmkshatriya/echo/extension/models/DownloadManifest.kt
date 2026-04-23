@@ -1,4 +1,4 @@
-package dev.brahmkshatriya.echo.extension
+package dev.brahmkshatriya.echo.extension.models
 
 import org.json.JSONArray
 import org.json.JSONObject

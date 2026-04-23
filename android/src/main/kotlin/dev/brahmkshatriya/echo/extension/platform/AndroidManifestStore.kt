@@ -1,6 +1,8 @@
-package dev.brahmkshatriya.echo.extension
+package dev.brahmkshatriya.echo.extension.platform
 
 import android.os.FileObserver
+import dev.brahmkshatriya.echo.extension.DownloadManifest
+import dev.brahmkshatriya.echo.extension.DownloadManifest.ContextType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,14 +21,14 @@ import java.io.File
  *
  * Call [start] once (e.g. in AndroidEDLExtension.onInitialize) and [stop] on teardown.
  */
-class ManifestManager(private val echoRoot: File) {
+class AndroidManifestStore(private val echoRoot: File) : ManifestStore {
     val tracksDir = File(echoRoot, "tracks").apply { mkdirs() }
     val playlistsDir = File(echoRoot, "playlists").apply { mkdirs() }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _manifests = MutableStateFlow<Map<String, DownloadManifest>>(emptyMap())
-    val manifests: StateFlow<Map<String, DownloadManifest>> = _manifests.asStateFlow()
+    override val manifests: StateFlow<Map<String, DownloadManifest>> = _manifests.asStateFlow()
 
     @Suppress("DEPRECATION")
     private val observer = object : FileObserver(
@@ -40,12 +42,12 @@ class ManifestManager(private val echoRoot: File) {
         }
     }
 
-    fun start() {
+    override fun start() {
         scope.launch { reloadAll() }
         observer.startWatching()
     }
 
-    fun stop() {
+    override fun stop() {
         observer.stopWatching()
     }
 
@@ -59,7 +61,16 @@ class ManifestManager(private val echoRoot: File) {
         _manifests.value = loaded
     }
 
-    fun getManifest(extensionId: String, contextId: String): DownloadManifest? {
+    override fun saveManifest(manifest: DownloadManifest) {
+        val file = File(playlistsDir, manifest.fileName())
+        file.writeText(manifest.toJson())
+        // Reload triggered by FileObserver, but also do it inline for immediate consistency
+        _manifests.value = _manifests.value.toMutableMap().apply {
+            put(manifest.fileName(), manifest)
+        }
+    }
+
+    override suspend fun loadManifest(extensionId: String, contextId: String): DownloadManifest? {
         val name = DownloadManifest(
             id = contextId, extensionId = extensionId, title = "",
             type = DownloadManifest.ContextType.PLAYLIST, lastSynced = 0, tracks = emptyList()
@@ -84,34 +95,22 @@ class ManifestManager(private val echoRoot: File) {
         }?.firstOrNull()
     }
 
-    fun trackExists(extensionId: String, trackId: String): Boolean =
+    override fun trackExists(extensionId: String, trackId: String): Boolean =
         findTrackFile(extensionId, trackId) != null
-
-    /**
-     * Persist a new or updated manifest to disk and refresh the in-memory map.
-     */
-    fun saveManifest(manifest: DownloadManifest) {
-        val file = File(playlistsDir, manifest.fileName())
-        file.writeText(manifest.toJson())
-        // Reload triggered by FileObserver, but also do it inline for immediate consistency
-        _manifests.value = _manifests.value.toMutableMap().apply {
-            put(manifest.fileName(), manifest)
-        }
-    }
 
     /**
      * Add a single track entry to an existing manifest (or create the manifest if absent).
      * Called after a successful tag step.
      */
-    fun recordTrackInManifest(
+    override fun recordTrackInManifest(
         extensionId: String,
         contextId: String,
         contextTitle: String,
-        contextType: DownloadManifest.ContextType,
+        contextType: ContextType,
         trackKey: String,
         sortOrder: Int?
     ) {
-        val existing = getManifest(extensionId, contextId)
+        val existing = loadManifest(extensionId, contextId)
         val now = System.currentTimeMillis()
         val alreadyPresent = existing?.tracks?.any { it.trackId == trackKey } == true
         if (alreadyPresent) return
@@ -157,7 +156,7 @@ class ManifestManager(private val echoRoot: File) {
      * Garbage-collect track files that are not referenced by any manifest.
      * Safe to call in a background job.
      */
-    fun pruneOrphanedTracks() {
+    override suspend fun pruneOrphanedTracks() {
         val referencedKeys = _manifests.value.values
             .flatMap { m -> m.tracks.map { it.trackId } }
             .toSet()

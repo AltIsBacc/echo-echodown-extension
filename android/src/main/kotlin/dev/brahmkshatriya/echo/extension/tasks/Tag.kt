@@ -21,7 +21,7 @@ import dev.brahmkshatriya.echo.extension.DownloadManifest
 import dev.brahmkshatriya.echo.extension.Downloader.okHttpDownload
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.getExtension
-import dev.brahmkshatriya.echo.extension.FFMpegHelper
+import dev.brahmkshatriya.echo.extension.platform.AndroidCodecEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.withContext
@@ -216,7 +216,7 @@ class Tag(
             append("\"${outputFile.absolutePath}\"")
         }
 
-        FFMpegHelper.execute(cmd)
+        AndroidCodecEngine.execute(cmd)
         if (file.delete()) outputFile.renameTo(file)
 
         coverFile?.delete()
