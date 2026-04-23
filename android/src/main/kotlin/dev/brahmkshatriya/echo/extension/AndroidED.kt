@@ -26,7 +26,7 @@ import okhttp3.Request
 import java.io.File
 
 @SuppressLint("PrivateApi")
-class AndroidED : EDExtension() {
+class AndroidEntrypoint : EDLExtension() {
 
     val manifestManager by lazy {
         ManifestManager(File(contextApp.cacheDir, "Echo"))

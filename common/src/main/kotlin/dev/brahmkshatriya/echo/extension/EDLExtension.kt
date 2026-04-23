@@ -18,7 +18,7 @@ import dev.brahmkshatriya.echo.common.models.Track
 import dev.brahmkshatriya.echo.common.providers.LyricsExtensionsProvider
 import dev.brahmkshatriya.echo.common.providers.MusicExtensionsProvider
 
-abstract class EDExtension : DownloadClient, MusicExtensionsProvider, LyricsExtensionsProvider {
+abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExtensionsProvider {
     override val requiredMusicExtensions = listOf<String>()
 
     var musicExtensionList: List<MusicExtension> = emptyList()

@@ -17,7 +17,7 @@ import java.io.File
  *   tracks/      - flat store of audio files: {extensionId}_{trackId}.{ext}
  *   playlists/   - manifest JSONs for playlists/albums/radios
  *
- * Call [start] once (e.g. in AndroidED.onInitialize) and [stop] on teardown.
+ * Call [start] once (e.g. in AndroidEntrypoint.onInitialize) and [stop] on teardown.
  */
 class ManifestManager(private val echoRoot: File) {
     val tracksDir = File(echoRoot, "tracks").apply { mkdirs() }
