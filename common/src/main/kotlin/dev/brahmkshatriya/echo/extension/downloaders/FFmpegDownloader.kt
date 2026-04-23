@@ -14,7 +14,7 @@ import java.io.File
  * Requires an [ICodecEngine] — registered in [DownloadRegistry] only on platforms
  * that supply one (Android, Desktop with system FFmpeg).
  */
-class FfmpegDownloader(private val codecEngine: ICodecEngine) : IDownloader {
+class FFmpegDownloader(private val codecEngine: ICodecEngine) : IDownloader {
 
     override suspend fun download(
         progressFlow: MutableStateFlow<Progress>,
@@ -23,7 +23,7 @@ class FfmpegDownloader(private val codecEngine: ICodecEngine) : IDownloader {
         file: File
     ): File {
         require(source is Streamable.Source.Http) {
-            "FfmpegDownloader only handles Streamable.Source.Http, got ${source::class.simpleName}"
+            "FFmpegDownloader only handles Streamable.Source.Http, got ${source::class.simpleName}"
         }
         val result = runCatching {
             if (file.exists()) file.delete()

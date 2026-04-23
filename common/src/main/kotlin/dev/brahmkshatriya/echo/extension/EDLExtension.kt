@@ -50,7 +50,7 @@ import java.io.File
  *         initPlatform(AndroidCodecEngine, AndroidManifestStore(…), AndroidSettingsProvider(settings))
  *         downloadRegistry.register("http",   HttpDownloader())
  *         downloadRegistry.register("stream", StreamDownloader())
- *         downloadRegistry.register("ffmpeg", FfmpegDownloader(AndroidCodecEngine))
+ *         downloadRegistry.register("ffmpeg", FFmpegDownloader(AndroidCodecEngine))
  *         taskRegistry.register(MergeTask(AndroidCodecEngine, settingsProvider) { isVideo })
  *         taskRegistry.register(TagTask(AndroidCodecEngine, settingsProvider, manifestStore, …))
  *         taskRegistry.register(LyricsTask(settingsProvider, { musicExtensionList }, { lyricsExtensionList }))
@@ -109,6 +109,10 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         manifestStore = store
         settingsProvider = settings
         store.start()
+
+        // default, not platform dependent
+        downloadRegistry.register("http",   HttpDownloader())
+        downloadRegistry.register("stream", StreamDownloader())
     }
 
     override suspend fun getDownloadTracks(

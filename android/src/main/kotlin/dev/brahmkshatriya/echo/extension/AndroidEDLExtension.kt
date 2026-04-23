@@ -10,7 +10,7 @@ import dev.brahmkshatriya.echo.common.settings.SettingSlider
 import dev.brahmkshatriya.echo.common.settings.SettingSwitch
 import dev.brahmkshatriya.echo.common.settings.SettingTextInput
 import dev.brahmkshatriya.echo.common.settings.Settings
-import dev.brahmkshatriya.echo.extension.downloaders.FfmpegDownloader
+import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
 import dev.brahmkshatriya.echo.extension.models.SettingKeys
@@ -57,9 +57,7 @@ class AndroidEDLExtension : EDLExtension() {
         val store = AndroidManifestStore(File(contextApp.cacheDir, "Echo"))
         initPlatform(AndroidCodecEngine, store, androidSettings)
 
-        downloadRegistry.register("http",   HttpDownloader())
-        downloadRegistry.register("stream", StreamDownloader())
-        downloadRegistry.register("ffmpeg", FfmpegDownloader(AndroidCodecEngine))
+        downloadRegistry.register("ffmpeg", FFmpegDownloader(AndroidCodecEngine))
 
         // order matters
         taskRegistry.register(MergeTask(AndroidCodecEngine, androidSettings, ::isVideo))

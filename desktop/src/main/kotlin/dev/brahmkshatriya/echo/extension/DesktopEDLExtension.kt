@@ -1,6 +1,6 @@
 package dev.brahmkshatriya.echo.extension
 
-import dev.brahmkshatriya.echo.extension.downloaders.FfmpegDownloader
+import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
 import dev.brahmkshatriya.echo.extension.platform.DesktopManifestStore
@@ -26,12 +26,9 @@ class DesktopEDLExtension : EDLExtension() {
 
         initPlatform(ProcessCodecEngine, store, settings)
 
-        // Downloaders
-        downloadRegistry.register("http",   HttpDownloader())
-        downloadRegistry.register("stream", StreamDownloader())
-        downloadRegistry.register("ffmpeg", FfmpegDownloader(ProcessCodecEngine))
+        downloadRegistry.register("ffmpeg", FFmpegDownloader(ProcessCodecEngine))
 
-        // Pipeline tasks — order matters
+        // order matters
         taskRegistry.register(MergeTask(ProcessCodecEngine, settings, ::isVideo))
         taskRegistry.register(
             TagTask(

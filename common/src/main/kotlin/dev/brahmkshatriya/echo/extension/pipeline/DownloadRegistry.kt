@@ -18,7 +18,7 @@ import java.io.File
  * ```kotlin
  * downloadRegistry.register("http",    HttpDownloader())
  * downloadRegistry.register("stream",  StreamDownloader())
- * downloadRegistry.register("ffmpeg",  FfmpegDownloader(codecEngine))
+ * downloadRegistry.register("ffmpeg",  FFmpegDownloader(codecEngine))
  * ```
  *
  * Server/source selection and downloader dispatch live here, driven by
@@ -37,8 +37,6 @@ class DownloadRegistry(private val settings: ISettingsProvider) {
         downloaders[name] = downloader
     }
 
-    // ── Server / source selection ────────────────────────────────────────────
-
     /**
      * Pick the best [Streamable] server from [context] according to the current
      * quality preference.
@@ -56,8 +54,6 @@ class DownloadRegistry(private val settings: ISettingsProvider) {
         server: Streamable.Media.Server
     ): List<Streamable.Source> =
         listOf(server.sources.select(settings.getQualityPreference()))
-
-    // ── Download dispatch ────────────────────────────────────────────────────
 
     /**
      * Route [source] to the appropriate [IDownloader] and execute the download.
@@ -81,7 +77,7 @@ class DownloadRegistry(private val settings: ISettingsProvider) {
             source is Streamable.Source.Http && source.type != Streamable.SourceType.Progressive ->
                 downloaders["ffmpeg"]
                     ?: throw ClientException.NotSupported(
-                        "Non-progressive HTTP downloads require a registered FfmpegDownloader"
+                        "Non-progressive HTTP downloads require a registered FFmpegDownloader"
                     )
 
             else -> downloaders["http"]
