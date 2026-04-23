@@ -1,13 +1,7 @@
 {
     "name": "Java & Kotlin",
-    "image": "mcr.microsoft.com/devcontainers/base:debian",
-    "features": {
-        "ghcr.io/devcontainers/features/java:1": {
-            "version": "25.0.2",
-            "installMaven": "false",
-            "installGradle": "true",
-            "jdkDistro": "tem"
-        }
+    "build": {
+        "dockerfile": "Dockerfile"
     },
     "customizations": {
         "vscode": {
