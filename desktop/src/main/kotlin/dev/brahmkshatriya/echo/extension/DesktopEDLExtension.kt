@@ -13,12 +13,6 @@ import java.io.File
 
 /**
  * Desktop concrete extension.
- *
- * Responsibilities (and ONLY these):
- *  - Provide [ProcessCodecEngine], [DesktopManifestStore], [DesktopSettingsProvider].
- *  - Register downloaders and pipeline tasks.
- *
- * No task logic. No download logic. No tagging logic. No hardcoded paths.
  */
 class DesktopEDLExtension : EDLExtension() {
 

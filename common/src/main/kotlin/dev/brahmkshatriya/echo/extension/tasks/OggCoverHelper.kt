@@ -9,11 +9,7 @@ import kotlin.io.encoding.Base64
  * Builds the Base64-encoded METADATA_BLOCK_PICTURE string required for OGG Vorbis
  * cover art embedding.
  *
- * Extracted from Tag (which previously lived in android/tasks/) so that [TagTask]
- * in common can use it without any Android imports.
- *
- * The image dimensions are read from the JPEG/PNG file header directly,
- * removing the dependency on [android.graphics.BitmapFactory].
+ * The image dimensions are read from the JPEG/PNG file header directly
  */
 internal object OggCoverHelper {
 

@@ -4,9 +4,6 @@ import java.io.File
 
 /**
  * Abstraction over FFmpeg/FFprobe operations.
- *
- * Android implementation: [AndroidCodecEngine] (backed by FFmpegKit).
- * Desktop implementation: [ProcessCodecEngine] (backed by a subprocess call).
  */
 interface ICodecEngine {
     /**

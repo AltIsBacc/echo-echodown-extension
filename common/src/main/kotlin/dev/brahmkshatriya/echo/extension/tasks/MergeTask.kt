@@ -16,7 +16,6 @@ import java.io.File
  * Renamed form: `"{sortOrder} {Title}.{ext}"` when track numbers are enabled,
  * else `"{Title}.{ext}"`.
  *
- * No Android or desktop imports — depends only on [ICodecEngine] and [ISettingsProvider].
  */
 class MergeTask(
     private val codecEngine: ICodecEngine?,

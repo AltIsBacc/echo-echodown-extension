@@ -50,5 +50,5 @@ class AndroidSettingsProvider(private val settings: Settings) : ISettingsProvide
         settings.getBoolean(SettingKeys.TRACK_NUM) ?: false
 
     override fun getSubfolder(): String =
-        settings.getString(SettingKeys.S_FOLDER) ?: "Echo/"
+        settings.getString(SettingKeys.S_FOLDER) ?: "Echo"
 }

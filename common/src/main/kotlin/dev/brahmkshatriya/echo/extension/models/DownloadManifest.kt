@@ -16,8 +16,6 @@ import org.json.JSONObject
  *   playlists/*.json → ManifestTrack.trackId → metadata/{trackKey}.json
  *                                             → tracks/*_{trackKey}.{ext}
  *                                             → lyrics/{trackKey}.lrc
- *
- * This class lives in exactly ONE place: common/models/. Never duplicate it.
  */
 data class DownloadManifest(
     val id: String,           // e.g. "spotify:playlist:abc"

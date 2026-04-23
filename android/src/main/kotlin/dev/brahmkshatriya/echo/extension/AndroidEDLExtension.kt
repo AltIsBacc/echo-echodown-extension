@@ -22,28 +22,14 @@ import dev.brahmkshatriya.echo.extension.tasks.MergeTask
 import dev.brahmkshatriya.echo.extension.tasks.TagTask
 import java.io.File
 
-/**
- * Android concrete extension.
- *
- * Responsibilities (and ONLY these):
- *  - Provide [AndroidCodecEngine], [AndroidManifestStore], [AndroidSettingsProvider].
- *  - Register downloaders and pipeline tasks.
- *  - Define the settings UI.
- *
- * No task logic. No download logic. No tagging logic. No illegalChars. No hardcoded paths.
- */
 @SuppressLint("PrivateApi")
 class AndroidEDLExtension : EDLExtension() {
-
-    // ── Platform object retrieval ─────────────────────────────────────────────
 
     private val contextApp: Application by lazy {
         Class.forName("android.app.ActivityThread")
             .getMethod("currentApplication")
             .invoke(null) as Application
     }
-
-    // ── Settings ──────────────────────────────────────────────────────────────
 
     private var _settings: Settings? = null
     override fun setSettings(settings: Settings) {
@@ -53,8 +39,6 @@ class AndroidEDLExtension : EDLExtension() {
     private val androidSettings: AndroidSettingsProvider by lazy {
         AndroidSettingsProvider(_settings ?: error("Settings have not been loaded"))
     }
-
-    // ── Output directory (platform-specific, path resolved by OS environment) ─
 
     private val downloadsDir: File
         get() = Environment.getExternalStoragePublicDirectory(
@@ -69,18 +53,15 @@ class AndroidEDLExtension : EDLExtension() {
             else base
         }
 
-    // ── Initialisation ────────────────────────────────────────────────────────
-
     override suspend fun onInitialize() {
         val store = AndroidManifestStore(File(contextApp.cacheDir, "Echo"))
         initPlatform(AndroidCodecEngine, store, androidSettings)
 
-        // Downloaders — registered by capability
         downloadRegistry.register("http",   HttpDownloader())
         downloadRegistry.register("stream", StreamDownloader())
         downloadRegistry.register("ffmpeg", FfmpegDownloader(AndroidCodecEngine))
 
-        // Pipeline tasks — order matters
+        // order matters
         taskRegistry.register(MergeTask(AndroidCodecEngine, androidSettings, ::isVideo))
         taskRegistry.register(
             TagTask(
@@ -100,8 +81,6 @@ class AndroidEDLExtension : EDLExtension() {
             )
         )
     }
-
-    // ── Settings UI ───────────────────────────────────────────────────────────
 
     override suspend fun getSettingItems(): List<Setting> = mutableListOf(
         SettingCategory(
@@ -133,7 +112,7 @@ class AndroidEDLExtension : EDLExtension() {
                 SettingTextInput(
                     "Download Subfolder", SettingKeys.S_FOLDER,
                     "Set your preferred sub folder (use \"/\" for nesting, e.g. \"Echo/My Music\")",
-                    "Echo/"
+                    "Echo"
                 ),
                 SettingSwitch(
                     "Put in Album folder", SettingKeys.A_FOLDER,

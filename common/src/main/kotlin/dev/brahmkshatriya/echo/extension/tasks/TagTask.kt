@@ -28,9 +28,6 @@ import java.io.File
  * Pipeline step 2: embed ID3 / Vorbis / MP4 metadata and cover art via FFmpeg,
  * then rename the file to the canonical `{Artist} - {Title}_{trackKey}.{ext}` form.
  *
- * ── No Android imports. No reference to AndroidEDLExtension. ──
- * [illegalReplace] is sourced from [Utils], not duplicated here.
- *
  * After tagging, [IManifestStore.recordTrackInManifest] is called to persist the
  * track reference so the playlist manifest stays up-to-date.
  */

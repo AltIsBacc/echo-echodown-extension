@@ -10,7 +10,7 @@ import kotlin.coroutines.resumeWithException
 /**
  * Android implementation of [ICodecEngine].
  *
- * Uses FFmpegKit under the hood — the dependency stays on Android only.
+ * Uses FFmpegKit under the hood
  */
 object AndroidCodecEngine : ICodecEngine {
 

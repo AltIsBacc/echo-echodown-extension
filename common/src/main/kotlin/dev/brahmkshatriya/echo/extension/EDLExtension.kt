@@ -62,8 +62,6 @@ import java.io.File
  */
 abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExtensionsProvider {
 
-    // ── Extension lists ───────────────────────────────────────────────────────
-
     override val requiredMusicExtensions = listOf<String>()
     var musicExtensionList: List<MusicExtension> = emptyList()
     override fun setMusicExtensions(extensions: List<MusicExtension>) {
@@ -76,18 +74,15 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         lyricsExtensionList = extensions
     }
 
-    // ── Platform objects — set once by subclass ───────────────────────────────
-
     protected lateinit var codecEngine: ICodecEngine
     protected lateinit var manifestStore: IManifestStore
     protected lateinit var settingsProvider: ISettingsProvider
 
-    // ── Pipeline infrastructure ───────────────────────────────────────────────
-
+    protected val taskRegistry = TaskRegistry()
     protected val downloadRegistry: DownloadRegistry by lazy {
         DownloadRegistry(settingsProvider)
     }
-    protected val taskRegistry = TaskRegistry()
+
     private val pipeline: DownloadPipeline by lazy {
         DownloadPipeline(downloadRegistry, taskRegistry)
     }
@@ -95,12 +90,9 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         ManifestManager(manifestStore)
     }
 
-    // ── Video flag — set during download step ─────────────────────────────────
-
     @Volatile
     private var isVideoFlag = false
 
-    /** Expose the current video flag to tasks registered by the subclass. */
     protected fun isVideo(): Boolean = isVideoFlag
 
     /**
@@ -118,8 +110,6 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         settingsProvider = settings
         store.start()
     }
-
-    // ── DownloadClient API ────────────────────────────────────────────────────
 
     override suspend fun getDownloadTracks(
         extensionId: String,
@@ -154,8 +144,6 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         )
         return pipeline.execute(progressFlow, context, source, tempFile)
     }
-
-    // ── Track resolution ──────────────────────────────────────────────────────
 
     private suspend fun resolveTracksFromItem(
         extensionId: String,

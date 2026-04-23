@@ -9,11 +9,7 @@ import java.io.File
 /**
  * Abstraction for a single download strategy.
  *
- * Concrete implementations live in common/downloaders/:
- *   - [HttpDownloader]    — progressive HTTP with OkHttp
- *   - [StreamDownloader]  — [Streamable.Source.Raw] / InputStream
- *   - [FfmpegDownloader]  — HLS / DASH via FFmpeg
- *
+ * Concrete implementations live in common/downloaders/
  * Registered by name in [DownloadRegistry].
  */
 interface IDownloader {

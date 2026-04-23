@@ -7,11 +7,6 @@ import dev.brahmkshatriya.echo.extension.models.TrackQuality
 
 /**
  * Pure utility functions shared across the entire common module.
- *
- * Rules:
- *  - No Android imports.
- *  - No desktop-specific imports.
- *  - No reference to any concrete extension class.
  */
 object Utils {
     /** Characters that are illegal in most filesystem paths. */
@@ -47,8 +42,6 @@ object Utils {
     /** Select a [Streamable.Source] from the list using [TrackQuality]. */
     fun List<Streamable.Source>.select(quality: TrackQuality): Streamable.Source =
         selectQuality(quality) { it.quality }
-
-    // ── Media-item helpers ───────────────────────────────────────────────────
 
     fun EchoMediaItem.toManifestType(): DownloadManifest.ContextType = when (this) {
         is dev.brahmkshatriya.echo.common.models.Album -> DownloadManifest.ContextType.ALBUM

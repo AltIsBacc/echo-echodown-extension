@@ -6,7 +6,6 @@ import dev.brahmkshatriya.echo.extension.models.TrackQuality
  * Desktop implementation of [ISettingsProvider].
  *
  * Returns hardcoded defaults for now; a config-file backend will be added later.
- * Returns [TrackQuality] enum — never raw Strings.
  */
 class DesktopSettingsProvider : ISettingsProvider {
     override fun getConcurrentDownloads(): Int = 2

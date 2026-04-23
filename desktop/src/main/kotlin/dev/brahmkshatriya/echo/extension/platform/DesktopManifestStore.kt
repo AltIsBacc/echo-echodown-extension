@@ -21,8 +21,6 @@ import java.util.concurrent.TimeUnit
  *
  * Uses [WatchService] to detect filesystem changes under [playlistsDir].
  * The watching loop runs on a coroutine in [scope].
- *
- * BUG FIX: the original file was missing its closing `}` — fixed here.
  */
 class DesktopManifestStore(private val playlistsDir: File) : IManifestStore {
 

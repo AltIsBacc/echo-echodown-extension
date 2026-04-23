@@ -9,8 +9,6 @@ import dev.brahmkshatriya.echo.extension.platform.IManifestStore
 /**
  * Pure business logic for deduplication and manifest updates.
  *
- * No Android or desktop imports — depends only on [IManifestStore].
- *
  * Used by [EDLExtension.getDownloadTracks] to decide which tracks need fetching.
  */
 class ManifestManager(private val store: IManifestStore) {

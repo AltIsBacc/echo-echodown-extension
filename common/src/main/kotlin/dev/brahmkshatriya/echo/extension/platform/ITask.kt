@@ -11,10 +11,7 @@ import java.io.File
  * Tasks are registered (in order) in [TaskRegistry] and executed sequentially
  * by [DownloadPipeline] after the initial file download completes.
  *
- * Concrete implementations in common/tasks/:
- *   - [MergeTask]   — probe format, rename file to sanitised title
- *   - [TagTask]     — embed metadata + cover art via FFmpeg
- *   - [LyricsTask]  — fetch & write .lrc / .txt
+ * Concrete implementations in common/tasks/
  *
  * Platform subclasses may add additional tasks by calling
  * `taskRegistry.register(MyTask(...))` in their `init` / `onInitialize`.

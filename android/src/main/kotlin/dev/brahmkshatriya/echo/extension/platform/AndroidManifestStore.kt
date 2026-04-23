@@ -21,8 +21,6 @@ import java.io.File
  * Directory layout under [echoRoot]:
  *   tracks/    — `{Artist} - {Title}_{sanitizedTrackId}.{ext}`
  *   playlists/ — `{extensionId}_{sanitizedContextId}.json`
- *
- * Call [start] once in [AndroidEDLExtension.onInitialize] and [stop] on teardown.
  */
 class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
 

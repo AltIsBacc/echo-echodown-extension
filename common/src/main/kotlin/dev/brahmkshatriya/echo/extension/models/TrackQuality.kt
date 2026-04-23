@@ -6,6 +6,6 @@ package dev.brahmkshatriya.echo.extension.models
  */
 enum class TrackQuality {
     HIGH,   // "0" — highest bitrate / best source
-    MEDIUM, // "1" — middle-of-the-road
+    MEDIUM, // "1"
     LOW     // "2" — smallest / lowest bitrate
 }

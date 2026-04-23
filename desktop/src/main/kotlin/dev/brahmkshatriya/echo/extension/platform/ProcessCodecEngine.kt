@@ -8,7 +8,7 @@ import java.io.File
  * Desktop implementation of [ICodecEngine].
  *
  * Delegates to a bundled or system-installed `ffmpeg` / `ffprobe` binary via
- * [ProcessBuilder]. No Android dependencies.
+ * [ProcessBuilder].
  */
 object ProcessCodecEngine : ICodecEngine {
 

@@ -23,7 +23,6 @@ import java.io.File
  *   - `{trackKey}.lrc`  for timed (synced) lyrics
  *   - `{trackKey}.txt`  for simple (unsynchronised) lyrics
  *
- * No Android or desktop imports.
  */
 class LyricsTask(
     private val settings: ISettingsProvider,

@@ -10,10 +10,6 @@ import java.io.File
  *
  * The manifest map is kept in memory and exposed as a [StateFlow], so observers
  * (e.g. a UI layer) react to changes automatically.
- *
- * Platform implementations:
- *   Android → [AndroidManifestStore]  (uses FileObserver)
- *   Desktop → [DesktopManifestStore]  (uses WatchService)
  */
 interface IManifestStore {
 
@@ -33,8 +29,6 @@ interface IManifestStore {
     /** Stop watching and release resources. */
     fun stop()
 
-    // ── Persistence ─────────────────────────────────────────────────────────
-
     /** Write [manifest] to disk (and update the in-memory map immediately). */
     fun saveManifest(manifest: DownloadManifest)
 
@@ -46,8 +40,6 @@ interface IManifestStore {
      * This keeps call-sites clean and avoids spurious coroutine overhead.
      */
     fun loadManifest(extensionId: String, contextId: String): DownloadManifest?
-
-    // ── Deduplication ───────────────────────────────────────────────────────
 
     /**
      * Returns true if a file whose name ends with `_{sanitizedTrackId}.{ext}`
@@ -70,8 +62,6 @@ interface IManifestStore {
         trackKey: String,
         sortOrder: Int?
     )
-
-    // ── Maintenance ─────────────────────────────────────────────────────────
 
     /**
      * Delete track files in [tracksDir] that are not referenced by any manifest.
