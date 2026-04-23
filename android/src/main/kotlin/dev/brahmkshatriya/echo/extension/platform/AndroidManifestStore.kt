@@ -1,8 +1,8 @@
 package dev.brahmkshatriya.echo.extension.platform
 
 import android.os.FileObserver
-import dev.brahmkshatriya.echo.extension.DownloadManifest
-import dev.brahmkshatriya.echo.extension.DownloadManifest.ContextType
+import dev.brahmkshatriya.echo.extension.models.DownloadManifest
+import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -13,17 +13,21 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * Single source of truth for all download manifests.
+ * Android implementation of [IManifestStore].
+ *
+ * Uses [FileObserver] to detect changes under [playlistsDir] and keeps an
+ * in-memory [StateFlow] map up to date.
  *
  * Directory layout under [echoRoot]:
- *   tracks/      - flat store of audio files: {extensionId}_{trackId}.{ext}
- *   playlists/   - manifest JSONs for playlists/albums/radios
+ *   tracks/    — `{Artist} - {Title}_{sanitizedTrackId}.{ext}`
+ *   playlists/ — `{extensionId}_{sanitizedContextId}.json`
  *
- * Call [start] once (e.g. in AndroidEDLExtension.onInitialize) and [stop] on teardown.
+ * Call [start] once in [AndroidEDLExtension.onInitialize] and [stop] on teardown.
  */
-class AndroidManifestStore(private val echoRoot: File) : ManifestStore {
-    val tracksDir = File(echoRoot, "tracks").apply { mkdirs() }
-    val playlistsDir = File(echoRoot, "playlists").apply { mkdirs() }
+class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
+
+    override val tracksDir: File = File(echoRoot, "tracks").apply { mkdirs() }
+    private val playlistsDir: File = File(echoRoot, "playlists").apply { mkdirs() }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -51,57 +55,42 @@ class AndroidManifestStore(private val echoRoot: File) : ManifestStore {
         observer.stopWatching()
     }
 
-    fun reloadAll() {
+    private fun reloadAll() {
         val loaded = playlistsDir.listFiles { f -> f.extension == "json" }
-            ?.mapNotNull { f ->
-                runCatching { DownloadManifest.fromJson(f.readText()) }.getOrNull()
-            }
+            ?.mapNotNull { f -> runCatching { DownloadManifest.fromJson(f.readText()) }.getOrNull() }
             ?.associateBy { it.fileName() }
             ?: emptyMap()
         _manifests.value = loaded
     }
 
     override fun saveManifest(manifest: DownloadManifest) {
-        val file = File(playlistsDir, manifest.fileName())
-        file.writeText(manifest.toJson())
-        // Reload triggered by FileObserver, but also do it inline for immediate consistency
+        File(playlistsDir, manifest.fileName()).writeText(manifest.toJson())
         _manifests.value = _manifests.value.toMutableMap().apply {
             put(manifest.fileName(), manifest)
         }
     }
 
-    override suspend fun loadManifest(extensionId: String, contextId: String): DownloadManifest? {
+    /**
+     * Non-suspend: reads from the in-memory map — no async I/O involved.
+     * See [IManifestStore.loadManifest] for the rationale.
+     */
+    override fun loadManifest(extensionId: String, contextId: String): DownloadManifest? {
         val name = DownloadManifest(
             id = contextId, extensionId = extensionId, title = "",
-            type = DownloadManifest.ContextType.PLAYLIST, lastSynced = 0, tracks = emptyList()
+            type = ContextType.PLAYLIST, lastSynced = 0, tracks = emptyList()
         ).fileName()
         return _manifests.value[name]
     }
 
-    // ----- Track existence -----
-
-    /**
-     * Returns the on-disk audio file for a track if it already exists,
-     * so we can skip re-downloading it.
-     */
-    fun findTrackFile(extensionId: String, trackId: String): File? {
-        // Filename format is "{Artist} - {Title}_{sanitizedTrackId}.{ext}"
-        // Match on the id suffix rather than reconstructing the human-readable part.
+    override fun trackExists(extensionId: String, trackId: String): Boolean {
         val idSuffix = "_${DownloadManifest.sanitize(trackId)}"
         return tracksDir.listFiles { f ->
             f.nameWithoutExtension.endsWith(idSuffix)
                 && f.extension in AUDIO_EXTENSIONS
                 && f.length() > 0
-        }?.firstOrNull()
+        }?.isNotEmpty() == true
     }
 
-    override fun trackExists(extensionId: String, trackId: String): Boolean =
-        findTrackFile(extensionId, trackId) != null
-
-    /**
-     * Add a single track entry to an existing manifest (or create the manifest if absent).
-     * Called after a successful tag step.
-     */
     override fun recordTrackInManifest(
         extensionId: String,
         contextId: String,
@@ -111,65 +100,30 @@ class AndroidManifestStore(private val echoRoot: File) : ManifestStore {
         sortOrder: Int?
     ) {
         val existing = loadManifest(extensionId, contextId)
-        val now = System.currentTimeMillis()
-        val alreadyPresent = existing?.tracks?.any { it.trackId == trackKey } == true
-        if (alreadyPresent) return
+        if (existing?.tracks?.any { it.trackId == trackKey } == true) return
 
+        val now = System.currentTimeMillis()
         val updated = existing?.copy(
             lastSynced = now,
-            tracks = existing.tracks + DownloadManifest.ManifestTrack(
-                trackId = trackKey,
-                sortOrder = sortOrder,
-                addedAt = now
-            )
+            tracks = existing.tracks + DownloadManifest.ManifestTrack(trackKey, sortOrder, now)
         ) ?: DownloadManifest(
-            id = contextId,
-            extensionId = extensionId,
-            title = contextTitle,
-            type = contextType,
-            lastSynced = now,
-            tracks = listOf(
-                DownloadManifest.ManifestTrack(
-                    trackId = trackKey,
-                    sortOrder = sortOrder,
-                    addedAt = now
-                )
-            )
+            id = contextId, extensionId = extensionId, title = contextTitle,
+            type = contextType, lastSynced = now,
+            tracks = listOf(DownloadManifest.ManifestTrack(trackKey, sortOrder, now))
         )
         saveManifest(updated)
     }
 
-    /**
-     * Remove a manifest entirely (e.g. user deleted the playlist).
-     * Note: this does NOT delete the track files — they may be shared.
-     */
-    fun deleteManifest(extensionId: String, contextId: String) {
-        val name = DownloadManifest(
-            id = contextId, extensionId = extensionId, title = "",
-            type = DownloadManifest.ContextType.PLAYLIST, lastSynced = 0, tracks = emptyList()
-        ).fileName()
-        File(playlistsDir, name).delete()
-        _manifests.value = _manifests.value.toMutableMap().apply { remove(name) }
-    }
-
-    /**
-     * Garbage-collect track files that are not referenced by any manifest.
-     * Safe to call in a background job.
-     */
     override suspend fun pruneOrphanedTracks() {
         val referencedKeys = _manifests.value.values
             .flatMap { m -> m.tracks.map { it.trackId } }
             .toSet()
-
         tracksDir.listFiles()?.forEach { file ->
-            val keyWithoutExt = file.nameWithoutExtension
-            if (keyWithoutExt !in referencedKeys) {
-                file.delete()
-            }
+            if (file.nameWithoutExtension !in referencedKeys) file.delete()
         }
     }
 
     companion object {
-        private val AUDIO_EXTENSIONS = listOf("m4a", "mp3", "flac", "ogg", "mp4")
+        private val AUDIO_EXTENSIONS = setOf("m4a", "mp3", "flac", "ogg", "mp4")
     }
 }

@@ -4,26 +4,38 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Represents a persisted playlist/album manifest on disk.
- * Lives at: Echo/playlists/{extensionId}_{contextId}.json
+ * Persisted playlist/album manifest.
+ *
+ * File layout:
+ *   {echoRoot}/playlists/{extensionId}_{sanitizedContextId}.json  ← playlist manifest
+ *   {echoRoot}/metadata/{trackKey}.json                            ← per-track metadata
+ *   {echoRoot}/tracks/{Artist} - {Title}_{sanitizedTrackId}.{ext} ← audio file
+ *   {echoRoot}/lyrics/{trackKey}.lrc | .txt                       ← lyrics file
+ *
+ * Reference chain:
+ *   playlists/*.json → ManifestTrack.trackId → metadata/{trackKey}.json
+ *                                             → tracks/*_{trackKey}.{ext}
+ *                                             → lyrics/{trackKey}.lrc
+ *
+ * This class lives in exactly ONE place: common/models/. Never duplicate it.
  */
 data class DownloadManifest(
-    val id: String,               // e.g. "spotify:playlist:abc"
+    val id: String,           // e.g. "spotify:playlist:abc"
     val extensionId: String,
     val title: String,
     val type: ContextType,
-    val lastSynced: Long,         // epoch ms
+    val lastSynced: Long,     // epoch ms
     val tracks: List<ManifestTrack>
 ) {
     enum class ContextType { PLAYLIST, ALBUM, RADIO }
 
     data class ManifestTrack(
-        val trackId: String,      // stable key: "{extensionId}_{track.id}"
+        val trackId: String,  // stable key: "{extensionId}_{sanitizedTrackId}"
         val sortOrder: Int?,
-        val addedAt: Long         // epoch ms
+        val addedAt: Long     // epoch ms
     )
 
-    /** Stable filename for this manifest. */
+    /** Stable filename for this manifest on disk. */
     fun fileName() = "${extensionId}_${sanitize(id)}.json"
 
     fun toJson(): String = JSONObject()
@@ -42,17 +54,20 @@ data class DownloadManifest(
 
     companion object {
         private val ILLEGAL = "[/\\\\:*?\"<>|]".toRegex()
-        fun sanitize(s: String) = ILLEGAL.replace(s, "_")
+
+        fun sanitize(s: String): String = ILLEGAL.replace(s, "_")
 
         fun fromJson(json: String): DownloadManifest {
             val root = JSONObject(json)
-            val tracks = root.getJSONArray("tracks").map { item ->
-                val obj = item as JSONObject
-                ManifestTrack(
-                    trackId = obj.getString("trackId"),
-                    sortOrder = obj.optInt("sortOrder").takeUnless { obj.isNull("sortOrder") },
-                    addedAt = obj.getLong("addedAt")
-                )
+            val tracks = root.getJSONArray("tracks").let { arr ->
+                (0 until arr.length()).map { i ->
+                    val obj = arr.getJSONObject(i)
+                    ManifestTrack(
+                        trackId = obj.getString("trackId"),
+                        sortOrder = obj.optInt("sortOrder").takeUnless { obj.isNull("sortOrder") },
+                        addedAt = obj.getLong("addedAt")
+                    )
+                }
             }
             return DownloadManifest(
                 id = root.getString("id"),
@@ -64,8 +79,11 @@ data class DownloadManifest(
             )
         }
 
-        /** Build a stable track key consistent across the whole app. */
-        fun trackKey(extensionId: String, trackId: String) =
+        /**
+         * Build a stable, filesystem-safe track key used as the primary identifier
+         * in manifests and as the suffix of audio filenames.
+         */
+        fun trackKey(extensionId: String, trackId: String): String =
             "${extensionId}_${sanitize(trackId)}"
     }
 }
