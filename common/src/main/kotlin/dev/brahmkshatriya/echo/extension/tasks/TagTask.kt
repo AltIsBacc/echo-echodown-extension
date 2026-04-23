@@ -175,7 +175,7 @@ class TagTask(
         // Rename to canonical stable form: "{Artist} - {Title}_{trackId}.{ext}"
         val artists = track.artists.joinToString(", ") { illegalReplace(it.name) }.ifBlank { "Unknown Artist" }
         val title = illegalReplace(track.title).ifBlank { track.id }
-        val trackId = DownloadManifest.sanitize(track.id)
+        val trackId = illegalReplace(track.id)
         val destDir = outputDir()
         destDir.mkdirs()
         val stableFile = File(destDir, "$artists - ${title}_${trackId}.$ext")

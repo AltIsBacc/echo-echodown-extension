@@ -11,8 +11,6 @@ import dev.brahmkshatriya.echo.common.settings.SettingSwitch
 import dev.brahmkshatriya.echo.common.settings.SettingTextInput
 import dev.brahmkshatriya.echo.common.settings.Settings
 import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
-import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
-import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
 import dev.brahmkshatriya.echo.extension.models.SettingKeys
 import dev.brahmkshatriya.echo.extension.platform.AndroidCodecEngine
 import dev.brahmkshatriya.echo.extension.platform.AndroidManifestStore

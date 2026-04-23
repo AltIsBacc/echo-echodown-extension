@@ -2,6 +2,7 @@ package dev.brahmkshatriya.echo.extension.platform
 
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
+import dev.brahmkshatriya.echo.extension.models.TrackManifest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -110,11 +111,11 @@ class DesktopManifestStore(private val playlistsDir: File) : IManifestStore {
         val now = System.currentTimeMillis()
         val updated = existing?.copy(
             lastSynced = now,
-            tracks = existing.tracks + DownloadManifest.ManifestTrack(trackKey, sortOrder, now)
+            tracks = existing.tracks + TrackManifest(trackKey, sortOrder, now)
         ) ?: DownloadManifest(
             id = contextId, extensionId = extensionId, title = contextTitle,
             type = contextType, lastSynced = now,
-            tracks = listOf(DownloadManifest.ManifestTrack(trackKey, sortOrder, now))
+            tracks = listOf(TrackManifest(trackKey, sortOrder, now))
         )
         saveManifest(updated)
     }

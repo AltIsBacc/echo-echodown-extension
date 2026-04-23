@@ -3,6 +3,7 @@ package dev.brahmkshatriya.echo.extension.platform
 import android.os.FileObserver
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
+import dev.brahmkshatriya.echo.extension.models.TrackManifest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -81,7 +82,7 @@ class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
     }
 
     override fun trackExists(extensionId: String, trackId: String): Boolean {
-        val idSuffix = "_${DownloadManifest.sanitize(trackId)}"
+        val idSuffix = "_${Utils.illegalReplace(trackId)}"
         return tracksDir.listFiles { f ->
             f.nameWithoutExtension.endsWith(idSuffix)
                 && f.extension in AUDIO_EXTENSIONS
@@ -103,11 +104,11 @@ class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
         val now = System.currentTimeMillis()
         val updated = existing?.copy(
             lastSynced = now,
-            tracks = existing.tracks + DownloadManifest.ManifestTrack(trackKey, sortOrder, now)
+            tracks = existing.tracks + TrackManifest(trackKey, sortOrder, now)
         ) ?: DownloadManifest(
             id = contextId, extensionId = extensionId, title = contextTitle,
             type = contextType, lastSynced = now,
-            tracks = listOf(DownloadManifest.ManifestTrack(trackKey, sortOrder, now))
+            tracks = listOf(TrackManifest(trackKey, sortOrder, now))
         )
         saveManifest(updated)
     }

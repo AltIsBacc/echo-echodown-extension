@@ -19,6 +19,8 @@ import dev.brahmkshatriya.echo.common.models.Streamable
 import dev.brahmkshatriya.echo.common.models.Track
 import dev.brahmkshatriya.echo.common.providers.LyricsExtensionsProvider
 import dev.brahmkshatriya.echo.common.providers.MusicExtensionsProvider
+import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
+import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
 import dev.brahmkshatriya.echo.extension.pipeline.DownloadPipeline
 import dev.brahmkshatriya.echo.extension.pipeline.DownloadRegistry
 import dev.brahmkshatriya.echo.extension.pipeline.ManifestManager
@@ -57,8 +59,6 @@ import java.io.File
  *     }
  * }
  * ```
- *
- * Subclasses must NOT contain any task logic, download logic, or tagging logic.
  */
 abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExtensionsProvider {
 

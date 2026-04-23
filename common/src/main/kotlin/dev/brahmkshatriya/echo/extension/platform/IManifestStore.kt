@@ -49,7 +49,7 @@ interface IManifestStore {
     fun trackExists(extensionId: String, trackId: String): Boolean
 
     /**
-     * Upsert a single [ManifestTrack] entry into the manifest identified by
+     * Upsert a single [TrackManifest] entry into the manifest identified by
      * [extensionId] + [contextId], creating the manifest if it does not yet exist.
      * Called after a successful tag step and also during the deduplication pass
      * (to keep playlist manifests up-to-date even when download is skipped).

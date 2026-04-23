@@ -1,8 +1,6 @@
 package dev.brahmkshatriya.echo.extension
 
 import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
-import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
-import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
 import dev.brahmkshatriya.echo.extension.platform.DesktopManifestStore
 import dev.brahmkshatriya.echo.extension.platform.DesktopSettingsProvider
 import dev.brahmkshatriya.echo.extension.platform.ProcessCodecEngine

@@ -2,19 +2,20 @@ package dev.brahmkshatriya.echo.extension.models
 
 import org.json.JSONArray
 import org.json.JSONObject
+import dev.brahmkshatriya.echo.extension.Utils
 
 /**
  * Persisted playlist/album manifest.
  *
  * File layout:
  *   {echoRoot}/playlists/{extensionId}_{sanitizedContextId}.json  ← playlist manifest
- *   {echoRoot}/metadata/{trackKey}.json                            ← per-track metadata
+ *   {echoRoot}/metadata/{trackKey}.json                           ← per-track metadata
  *   {echoRoot}/tracks/{Artist} - {Title}_{sanitizedTrackId}.{ext} ← audio file
  *   {echoRoot}/lyrics/{trackKey}.lrc | .txt                       ← lyrics file
  *
  * Reference chain:
- *   playlists/*.json → ManifestTrack.trackId → metadata/{trackKey}.json
- *                                             → tracks/*_{trackKey}.{ext}
+ *   playlists/{fileName}.json → TrackManifest.trackId → metadata/{trackKey}.json
+ *                                             → tracks/{fileName}_{trackKey}.{ext}
  *                                             → lyrics/{trackKey}.lrc
  */
 data class DownloadManifest(
@@ -23,18 +24,12 @@ data class DownloadManifest(
     val title: String,
     val type: ContextType,
     val lastSynced: Long,     // epoch ms
-    val tracks: List<ManifestTrack>
+    val tracks: List<TrackManifest>
 ) {
     enum class ContextType { PLAYLIST, ALBUM, RADIO }
 
-    data class ManifestTrack(
-        val trackId: String,  // stable key: "{extensionId}_{sanitizedTrackId}"
-        val sortOrder: Int?,
-        val addedAt: Long     // epoch ms
-    )
-
     /** Stable filename for this manifest on disk. */
-    fun fileName() = "${extensionId}_${sanitize(id)}.json"
+    fun fileName() = "${extensionId}_${Utils.illegalReplace(id)}.json"
 
     fun toJson(): String = JSONObject()
         .put("id", id)
@@ -51,16 +46,12 @@ data class DownloadManifest(
         .toString()
 
     companion object {
-        private val ILLEGAL = "[/\\\\:*?\"<>|]".toRegex()
-
-        fun sanitize(s: String): String = ILLEGAL.replace(s, "_")
-
         fun fromJson(json: String): DownloadManifest {
             val root = JSONObject(json)
             val tracks = root.getJSONArray("tracks").let { arr ->
                 (0 until arr.length()).map { i ->
                     val obj = arr.getJSONObject(i)
-                    ManifestTrack(
+                    TrackManifest(
                         trackId = obj.getString("trackId"),
                         sortOrder = obj.optInt("sortOrder").takeUnless { obj.isNull("sortOrder") },
                         addedAt = obj.getLong("addedAt")
@@ -78,10 +69,10 @@ data class DownloadManifest(
         }
 
         /**
-         * Build a stable, filesystem-safe track key used as the primary identifier
-         * in manifests and as the suffix of audio filenames.
+         * Build a stable, filesystem-safe track key
+         * used as the primary identifierbin manifests and as the suffix of audio filenames.
          */
         fun trackKey(extensionId: String, trackId: String): String =
-            "${extensionId}_${sanitize(trackId)}"
+            "${extensionId}_${Utils.illegalReplace(trackId)}"
     }
 }
