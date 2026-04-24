@@ -17,12 +17,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 
 /**
- * Pipeline step 3: fetch lyrics and write them next to the audio file.
+ * Fetch lyrics and write them next to the audio file.
  *
  * Writes:
  *   - `{trackKey}.lrc`  for timed (synced) lyrics
  *   - `{trackKey}.txt`  for simple (unsynchronised) lyrics
- *
  */
 class LyricsTask(
     private val settings: ISettingsProvider,

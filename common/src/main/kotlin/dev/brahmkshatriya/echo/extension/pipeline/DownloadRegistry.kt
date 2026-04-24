@@ -4,7 +4,7 @@ import dev.brahmkshatriya.echo.common.helpers.ClientException
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.Progress
 import dev.brahmkshatriya.echo.common.models.Streamable
-import dev.brahmkshatriya.echo.extension.EDLUtils.select
+import dev.brahmkshatriya.echo.extension.utils.EDLUtils.select
 import dev.brahmkshatriya.echo.extension.platform.IDownloader
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,18 +12,6 @@ import java.io.File
 
 /**
  * Registry for all [IDownloader] implementations.
- *
- * Platform subclasses register their downloaders once during initialisation:
- *
- * ```kotlin
- * downloadRegistry.register("http",    HttpDownloader())
- * downloadRegistry.register("stream",  StreamDownloader())
- * downloadRegistry.register("ffmpeg",  FFmpegDownloader(codecEngine))
- * ```
- *
- * Server/source selection and downloader dispatch live here, driven by
- * [ISettingsProvider.getQualityPreference], so [EDLExtension] subclasses
- * never contain quality logic.
  */
 class DownloadRegistry(private val settings: ISettingsProvider) {
 
@@ -70,11 +58,11 @@ class DownloadRegistry(private val settings: ISettingsProvider) {
         source: Streamable.Source,
         file: File
     ): File {
-        val downloader = when {
-            source is Streamable.Source.Raw -> downloaders["stream"]
+        val downloader = when (source) {
+            is Streamable.Source.Raw -> downloaders["stream"]
                 ?: throw ClientException.NotSupported("No StreamDownloader registered")
 
-            source is Streamable.Source.Http && source.type != Streamable.SourceType.Progressive ->
+            is Streamable.Source.Http if source.type != Streamable.SourceType.Progressive ->
                 downloaders["ffmpeg"]
                     ?: throw ClientException.NotSupported(
                         "Non-progressive HTTP downloads require a registered FFmpegDownloader"

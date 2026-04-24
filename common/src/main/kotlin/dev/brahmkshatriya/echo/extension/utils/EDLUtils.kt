@@ -1,4 +1,4 @@
-package dev.brahmkshatriya.echo.extension
+package dev.brahmkshatriya.echo.extension.utils
 
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
 import dev.brahmkshatriya.echo.common.models.Streamable

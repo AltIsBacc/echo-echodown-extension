@@ -1,4 +1,4 @@
-package dev.brahmkshatriya.echo.extension.tasks
+package dev.brahmkshatriya.echo.extension.processors
 
 import dev.brahmkshatriya.echo.common.Extension
 import dev.brahmkshatriya.echo.common.MusicExtension
@@ -13,7 +13,8 @@ import dev.brahmkshatriya.echo.common.models.Track
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.getExtension
 import dev.brahmkshatriya.echo.extension.HttpStreamUtil
-import dev.brahmkshatriya.echo.extension.EDLUtils.illegalReplace
+import dev.brahmkshatriya.echo.extension.utils.EDLUtils.illegalReplace
+import dev.brahmkshatriya.echo.extension.utils.OggCoverHelper
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
@@ -25,19 +26,18 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * Pipeline step 2: embed ID3 / Vorbis / MP4 metadata and cover art via FFmpeg,
+ * Step 2 processor: embed ID3 / Vorbis / MP4 metadata and cover art via FFmpeg,
  * then rename the file to the canonical `{Artist} - {Title}_{trackKey}.{ext}` form.
  *
  * After tagging, [IManifestStore.recordTrackInManifest] is called to persist the
  * track reference so the playlist manifest stays up-to-date.
  */
-class TagTask(
+class TagProcessor(
     private val codecEngine: ICodecEngine,
     private val settings: ISettingsProvider,
     private val manifestStore: IManifestStore,
     private val musicExtensions: () -> List<MusicExtension>,
     private val outputDir: () -> File,
-    /** Provide the current "is this a video stream" flag from the download step. */
     private val isVideo: () -> Boolean
 ) : ITask {
 
@@ -78,7 +78,7 @@ class TagTask(
                 extensionId = context.extensionId,
                 contextId = contextItem.id,
                 contextTitle = contextItem.title,
-                contextType = dev.brahmkshatriya.echo.extension.EDLUtils.run {
+                contextType = dev.brahmkshatriya.echo.extension.utils.EDLUtils.run {
                     contextItem.toManifestType()
                 },
                 trackKey = DownloadManifest.trackKey(context.extensionId, context.track.id),

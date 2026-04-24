@@ -21,6 +21,7 @@ import dev.brahmkshatriya.echo.common.providers.LyricsExtensionsProvider
 import dev.brahmkshatriya.echo.common.providers.MusicExtensionsProvider
 import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
+import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
 import dev.brahmkshatriya.echo.extension.pipeline.DownloadPipeline
 import dev.brahmkshatriya.echo.extension.pipeline.DownloadRegistry
 import dev.brahmkshatriya.echo.extension.pipeline.ManifestManager
@@ -28,34 +29,19 @@ import dev.brahmkshatriya.echo.extension.pipeline.TaskRegistry
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
+import dev.brahmkshatriya.echo.extension.processors.MergeProcessor
+import dev.brahmkshatriya.echo.extension.processors.TagProcessor
+import dev.brahmkshatriya.echo.extension.tasks.LyricsTask
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 
 /**
  * Abstract base class for EDL download extensions.
  *
- * ── What this class owns ──────────────────────────────────────────────────
- *  • [DownloadRegistry]  — registered downloaders + server/source selection
- *  • [TaskRegistry]      — ordered post-download task pipeline
- *  • [DownloadPipeline]  — orchestrates download + task execution
- *  • [ManifestManager]   — deduplication logic
- *  • Extension-list management (music + lyrics)
- *  • [DownloadClient] API surface (getDownloadTracks, selectServer, selectSources, download)
- *
- * ── What subclasses provide ───────────────────────────────────────────────
- *  Subclasses pass their platform implementations via [initPlatform] and register
- *  tasks/downloaders in their `init` block or [onInitialize]:
- *
  * ```kotlin
  * class AndroidEDLExtension : EDLExtension() {
  *     override fun onInitialize() {
  *         initPlatform(AndroidCodecEngine, AndroidManifestStore(…), AndroidSettingsProvider(settings))
- *         downloadRegistry.register("http",   HttpDownloader())
- *         downloadRegistry.register("stream", StreamDownloader())
- *         downloadRegistry.register("ffmpeg", FFmpegDownloader(AndroidCodecEngine))
- *         taskRegistry.register(MergeTask(AndroidCodecEngine, settingsProvider) { isVideo })
- *         taskRegistry.register(TagTask(AndroidCodecEngine, settingsProvider, manifestStore, …))
- *         taskRegistry.register(LyricsTask(settingsProvider, { musicExtensionList }, { lyricsExtensionList }))
  *     }
  * }
  * ```
@@ -74,9 +60,15 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         lyricsExtensionList = extensions
     }
 
+    override val concurrentDownloads: Int
+        get() = settingsProvider.getConcurrentDownloads()
+
     protected lateinit var codecEngine: ICodecEngine
     protected lateinit var manifestStore: IManifestStore
     protected lateinit var settingsProvider: ISettingsProvider
+
+    protected lateinit var mergeProcessor: MergeProcessor
+    protected lateinit var tagProcessor: TagProcessor
 
     protected val taskRegistry = TaskRegistry()
     protected val downloadRegistry: DownloadRegistry by lazy {
@@ -108,11 +100,27 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         codecEngine = codec
         manifestStore = store
         settingsProvider = settings
+        mergeProcessor = MergeProcessor(codecEngine, settingsProvider, ::isVideo)
+        tagProcessor = TagProcessor(
+            codecEngine, settingsProvider, manifestStore,
+            { musicExtensionList },
+            { getOutputDir() },
+            ::isVideo
+        )
+        
         store.start()
 
-        // default, not platform dependent
         downloadRegistry.register("http",   HttpDownloader())
         downloadRegistry.register("stream", StreamDownloader())
+        downloadRegistry.register("ffmpeg", FFmpegDownloader(codecEngine))
+
+        taskRegistry.register(
+            LyricsTask(
+                settings         = settingsProvider,
+                musicExtensions  = { musicExtensionList },
+                lyricsExtensions = { lyricsExtensionList }
+            )
+        )
     }
 
     override suspend fun getDownloadTracks(
@@ -181,7 +189,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         context: DownloadContext,
         files: List<File>
     ): File {
-        TODO("Not yet implemented")
+        return mergeProcessor.execute(progressFlow, context, files.first())
     }
 
     override suspend fun tag(
@@ -189,8 +197,10 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         context: DownloadContext,
         file: File
     ): File {
-        TODO("Not yet implemented")
+        return tagProcessor.execute(progressFlow, context, file)
     }
+
+    abstract fun getOutputDir(): File
 
     companion object {
         fun List<Extension<*>>.getExtension(id: String?) = firstOrNull { it.id == id }

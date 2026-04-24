@@ -2,7 +2,7 @@ package dev.brahmkshatriya.echo.extension.models
 
 import org.json.JSONArray
 import org.json.JSONObject
-import dev.brahmkshatriya.echo.extension.EDLUtils
+import dev.brahmkshatriya.echo.extension.utils.EDLUtils
 
 /**
  * Persisted playlist/album manifest.

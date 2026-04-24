@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-    compileOnly(libs.echo.common)
-    compileOnly(libs.kotlin.stdlib)
-    compileOnly(libs.org.json)
+    implementation(libs.echo.common)
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.org.json)
 }

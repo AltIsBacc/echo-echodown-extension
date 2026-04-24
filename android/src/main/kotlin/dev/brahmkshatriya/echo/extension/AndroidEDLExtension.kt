@@ -10,14 +10,10 @@ import dev.brahmkshatriya.echo.common.settings.SettingSlider
 import dev.brahmkshatriya.echo.common.settings.SettingSwitch
 import dev.brahmkshatriya.echo.common.settings.SettingTextInput
 import dev.brahmkshatriya.echo.common.settings.Settings
-import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
 import dev.brahmkshatriya.echo.extension.models.SettingKeys
 import dev.brahmkshatriya.echo.extension.platform.AndroidCodecEngine
 import dev.brahmkshatriya.echo.extension.platform.AndroidManifestStore
 import dev.brahmkshatriya.echo.extension.platform.AndroidSettingsProvider
-import dev.brahmkshatriya.echo.extension.tasks.LyricsTask
-import dev.brahmkshatriya.echo.extension.tasks.MergeTask
-import dev.brahmkshatriya.echo.extension.tasks.TagTask
 import java.io.File
 
 @SuppressLint("PrivateApi")
@@ -38,44 +34,23 @@ class AndroidEDLExtension : EDLExtension() {
         AndroidSettingsProvider(_settings ?: error("Settings have not been loaded"))
     }
 
-    private val downloadsDir: File
-        get() = Environment.getExternalStoragePublicDirectory(
+    private val androidManifestStore: AndroidManifestStore by lazy {
+        AndroidManifestStore(File(contextApp.cacheDir, "Echo"))
+    }
+
+    override fun getOutputDir(): File =
+        Environment.getExternalStoragePublicDirectory(
             when (androidSettings.getDownloadFolder()) {
                 "music"    -> Environment.DIRECTORY_MUSIC
                 "podcasts" -> Environment.DIRECTORY_PODCASTS
                 else       -> Environment.DIRECTORY_DOWNLOADS
             }
         ).let { base ->
-            if (androidSettings.shouldUseSubfolders())
-                File(base, androidSettings.getSubfolder())
-            else base
+            File(base, androidSettings.getSubfolder()).also { it.mkdirs() }
         }
 
     override suspend fun onInitialize() {
-        val store = AndroidManifestStore(File(contextApp.cacheDir, "Echo"))
-        initPlatform(AndroidCodecEngine, store, androidSettings)
-
-        downloadRegistry.register("ffmpeg", FFmpegDownloader(AndroidCodecEngine))
-
-        // order matters
-        taskRegistry.register(MergeTask(AndroidCodecEngine, androidSettings, ::isVideo))
-        taskRegistry.register(
-            TagTask(
-                codecEngine     = AndroidCodecEngine,
-                settings        = androidSettings,
-                manifestStore   = manifestStore,
-                musicExtensions = { musicExtensionList },
-                outputDir       = { downloadsDir },
-                isVideo         = ::isVideo
-            )
-        )
-        taskRegistry.register(
-            LyricsTask(
-                settings         = androidSettings,
-                musicExtensions  = { musicExtensionList },
-                lyricsExtensions = { lyricsExtensionList }
-            )
-        )
+        initPlatform(AndroidCodecEngine, androidManifestStore, androidSettings)
     }
 
     override suspend fun getSettingItems(): List<Setting> = mutableListOf(
@@ -113,7 +88,7 @@ class AndroidEDLExtension : EDLExtension() {
                 SettingSwitch(
                     "Put in Album folder", SettingKeys.A_FOLDER,
                     "Put songs inside album folder when downloaded as single", false
-                )
+                ) // not implemented yet
             )
         ),
         SettingCategory(
@@ -151,7 +126,4 @@ class AndroidEDLExtension : EDLExtension() {
             )
         )
     )
-
-    override val concurrentDownloads: Int
-        get() = androidSettings.getConcurrentDownloads()
 }

@@ -1,8 +1,8 @@
-package dev.brahmkshatriya.echo.extension.tasks
+package dev.brahmkshatriya.echo.extension.processors
 
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.Progress
-import dev.brahmkshatriya.echo.extension.EDLUtils.illegalReplace
+import dev.brahmkshatriya.echo.extension.utils.EDLUtils.illegalReplace
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
 import dev.brahmkshatriya.echo.extension.platform.ITask
@@ -10,15 +10,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 
 /**
- * Pipeline step 1: detect the container format, then rename the temp file
+ * Step 1 processor: detect the container format, then rename the temp file
  * to a human-readable sanitised title.
  *
  * Renamed form: `"{sortOrder} {Title}.{ext}"` when track numbers are enabled,
  * else `"{Title}.{ext}"`.
- *
  */
-class MergeTask(
-    private val codecEngine: ICodecEngine?,
+class MergeProcessor(
+    private val codecEngine: ICodecEngine,
     private val settings: ISettingsProvider,
     private val isVideo: () -> Boolean
 ) : ITask {
@@ -29,7 +28,7 @@ class MergeTask(
         file: File
     ): File {
         progressFlow.emit(Progress(4, 1))
-        val ext = codecEngine?.probeFormat(file, isVideo()) ?: if (isVideo()) "mp4" else "mp3"
+        val ext = codecEngine.probeFormat(file, isVideo())
 
         progressFlow.emit(Progress(4, 2))
         val sanitizedTitle = buildString {

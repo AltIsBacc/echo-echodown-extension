@@ -1,7 +1,7 @@
 package dev.brahmkshatriya.echo.extension.platform
 
 import android.os.FileObserver
-import dev.brahmkshatriya.echo.extension.EDLUtils
+import dev.brahmkshatriya.echo.extension.utils.EDLUtils
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackManifest

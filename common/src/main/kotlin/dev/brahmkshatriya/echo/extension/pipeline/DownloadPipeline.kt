@@ -11,8 +11,6 @@ import java.io.File
  *
  * 1. [DownloadRegistry.download]  — fetch the raw file
  * 2. [TaskRegistry.executeAll]    — run MergeTask → TagTask → LyricsTask (… + any extras)
- *
- * [EDLExtension] holds an instance of this and delegates its [DownloadClient] methods here.
  */
 class DownloadPipeline(
     private val downloadRegistry: DownloadRegistry,
