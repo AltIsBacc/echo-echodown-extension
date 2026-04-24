@@ -51,20 +51,23 @@ class MergeProcessor(
          * counter suffix if a file with that name already exists.
          */
         fun getUniqueFile(directory: File, baseName: String, extension: String, f: File): File {
-            val file = if (f.setWritable(true)) f else {
-                File(directory, "$baseName-${f.hashCode()}.$extension").also {
-                    f.copyTo(it, overwrite = true)
-                    f.delete()
-                }
-            }
+            f.setWritable(true)
+
             var name = "$baseName.$extension"
             var target = File(directory, name)
             var counter = 1
-            while (!file.renameTo(target)) {
+
+            while (target.exists()) {
                 name = "$baseName ($counter).$extension"
                 target = File(directory, name)
                 counter++
             }
+            
+            if (!f.renameTo(target)) {
+                f.copyTo(target, overwrite = true)
+                f.delete()
+            }
+            
             return target
         }
     }

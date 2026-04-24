@@ -17,9 +17,10 @@ object AndroidCodecEngine : ICodecEngine {
     override suspend fun executeCommand(command: String): String =
         suspendCancellableCoroutine { cont ->
             val session = FFmpegKit.executeAsync(command, { session ->
+                println("FFmpeg done: returnCode=${session.returnCode}, output=${session.output}")
                 if (session.returnCode.isValueSuccess) cont.resume(session.output.orEmpty())
                 else cont.resumeWithException(Exception(session.output))
-            })
+            }, { /* log callback — ignore */ }, { /* stat callback — ignore */ })
             cont.invokeOnCancellation { session.cancel() }
         }
 

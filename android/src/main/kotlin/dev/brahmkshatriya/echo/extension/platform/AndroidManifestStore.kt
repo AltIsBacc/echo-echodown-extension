@@ -87,12 +87,8 @@ class AndroidManifestStore(
     }
 
     override fun trackExists(extensionId: String, trackId: String): Boolean {
-        val idSuffix = "_${EDLUtils.illegalReplace(trackId)}"
-        return directories.tracks.listFiles { f ->
-            f.nameWithoutExtension.endsWith(idSuffix)
-                && f.extension in AUDIO_EXTENSIONS
-                && f.length() > 0
-        }?.isNotEmpty() == true
+        val fileName = EDLUtils.illegalReplace("${extensionId}_${trackId}") + ".json"
+        return File(directories.metadata, fileName).exists()
     }
 
     override fun recordTrackInManifest(

@@ -14,6 +14,7 @@ import dev.brahmkshatriya.echo.extension.EchoDirectories
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.getExtension
 import dev.brahmkshatriya.echo.extension.HttpStreamUtil
+import dev.brahmkshatriya.echo.extension.utils.EDLUtils
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils.illegalReplace
 import dev.brahmkshatriya.echo.extension.utils.OggCoverHelper
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
@@ -50,29 +51,34 @@ class TagProcessor(
         file: File
     ): File = withContext(Dispatchers.IO) {
         val tagged = runCatching {
-            val track = context.track
             val extension = musicExtensions().getExtension(context.extensionId)
-
-            val albumKey = "${context.extensionId}:${track.album?.id}"
-            val album = albumCache.getOrPut(albumKey) { loadAlbum(extension, track) }
-
-            progressFlow.emit(Progress(4, 1))
-            val coverFile = saveCoverImage(file, track)
-            progressFlow.emit(Progress(4, 2))
-
+            
+            val albumKey = "${context.extensionId}:${context.track.album?.id}"
+            val album = albumCache.getOrPut(albumKey) { loadAlbum(extension, context.track) }
+            
+            progressFlow.emit(Progress(5, 1))
+            val coverFile = saveCoverImage(file, context.track)
+            
+            progressFlow.emit(Progress(5, 2))
             ffmpegTag(
                 file = file,
                 context = context,
-                track = track,
                 coverFile = coverFile,
                 lyricsText = null, // LyricsTask handles writing separately
                 album = album,
                 extensionName = extension?.name.orEmpty(),
                 hasCover = false
             )
-        }.getOrElse { throw it }
+        }.getOrThrow()
 
-        progressFlow.emit(Progress(4, 3))
+        progressFlow.emit(Progress(5, 3))
+
+        // Rename to canonical stable form: "{Title}.{ext}" with collision handling
+        val sanitizedTitle = illegalReplace(context.track.title).ifBlank { context.track.id }
+        val destDir = outputDir(context).also { it.mkdirs() }
+        val stableFile = MergeProcessor.getUniqueFile(destDir, sanitizedTitle, file.extension.lowercase(), tagged)
+        
+        progressFlow.emit(Progress(5, 4))
 
         // Record this track in the manifest so playlist metadata stays consistent
         val contextItem = context.context
@@ -81,7 +87,7 @@ class TagProcessor(
                 extensionId = context.extensionId,
                 contextId = contextItem.id,
                 contextTitle = contextItem.title,
-                contextType = dev.brahmkshatriya.echo.extension.utils.EDLUtils.run {
+                contextType = EDLUtils.run {
                     contextItem.toManifestType()
                 },
                 trackKey = DownloadManifest.trackKey(context.extensionId, context.track.id),
@@ -92,14 +98,13 @@ class TagProcessor(
         // Save track metadata
         manifestStore.saveTrackMetadata(TrackMetadata.fromTrack(context.track, context.extensionId))
 
-        progressFlow.emit(Progress(4, 4))
-        tagged
+        progressFlow.emit(Progress(5, 5))
+        stableFile
     }
 
     private suspend fun ffmpegTag(
         file: File,
         context: DownloadContext,
-        track: Track,
         coverFile: File?,
         lyricsText: String?,
         album: Album?,
@@ -108,6 +113,7 @@ class TagProcessor(
     ): File {
         val outputFile = File(file.parent, "temp_${file.name}")
         val ext = file.extension.lowercase()
+        val track = context.track
 
         val cmd = buildString {
             append("-y ")
@@ -167,7 +173,7 @@ class TagProcessor(
             val msg = result.exceptionOrNull()?.toString().orEmpty()
             if (msg.contains("JPEG-LS support not enabled")) {
                 // Retry without cover art
-                return ffmpegTag(file, context, track, coverFile, lyricsText, album, extensionName, hasCover = true)
+                return ffmpegTag(file, context, coverFile, lyricsText, album, extensionName, hasCover = true)
             }
             coverFile?.delete()
             throw result.exceptionOrNull()!!
@@ -176,15 +182,8 @@ class TagProcessor(
         if (file.delete()) outputFile.renameTo(file)
         coverFile?.delete()
 
-        // Rename to canonical stable form: "{Title}.{ext}" with collision handling
-        val sanitizedTitle = illegalReplace(track.title).ifBlank { track.id }
-        val destDir = outputDir(context)
-        destDir.mkdirs()
-        val stableFile = MergeProcessor.getUniqueFile(destDir, sanitizedTitle, ext, file)
-        return stableFile
+        return file
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private suspend fun loadAlbum(extension: Extension<*>?, track: Track): Album? =
         extension?.get<AlbumClient, Album?> {
