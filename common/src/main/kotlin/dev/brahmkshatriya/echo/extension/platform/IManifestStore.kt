@@ -2,8 +2,8 @@ package dev.brahmkshatriya.echo.extension.platform
 
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
+import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import kotlinx.coroutines.flow.StateFlow
-import java.io.File
 
 /**
  * All manifest and track-persistence operations.
@@ -15,13 +15,6 @@ interface IManifestStore {
 
     /** Live, in-memory view of every loaded manifest keyed by [DownloadManifest.fileName]. */
     val manifests: StateFlow<Map<String, DownloadManifest>>
-
-    /**
-     * Root directory that holds audio files.
-     * Named "{Artist} - {Title}_{sanitizedTrackId}.{ext}" so they are both
-     * human-readable and deduplication-safe.
-     */
-    val tracksDir: File
 
     /** Begin watching the playlists directory for changes and load existing manifests. */
     fun start()
@@ -43,7 +36,7 @@ interface IManifestStore {
 
     /**
      * Returns true if a file whose name ends with `_{sanitizedTrackId}.{ext}`
-     * already exists in [tracksDir] and has non-zero size.
+     * already exists in the tracks directory and has non-zero size.
      * Used to skip re-downloading a track that was already fetched.
      */
     fun trackExists(extensionId: String, trackId: String): Boolean
@@ -64,8 +57,18 @@ interface IManifestStore {
     )
 
     /**
-     * Delete track files in [tracksDir] that are not referenced by any manifest.
+     * Delete track files in the tracks directory that are not referenced by any manifest.
      * Safe to call on a background thread/coroutine.
      */
     suspend fun pruneOrphanedTracks()
+
+    /**
+     * Save detailed track metadata to the metadata directory.
+     */
+    fun saveTrackMetadata(metadata: TrackMetadata)
+
+    /**
+     * Load track metadata by extension ID and track ID.
+     */
+    fun loadTrackMetadata(extensionId: String, trackId: String): TrackMetadata?
 }

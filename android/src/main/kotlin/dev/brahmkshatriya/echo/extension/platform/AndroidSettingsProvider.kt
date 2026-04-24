@@ -37,4 +37,7 @@ class AndroidSettingsProvider(private val settings: Settings) : ISettingsProvide
 
     override fun getSubfolder(): String =
         settings.getString(SettingKeys.S_FOLDER) ?: "Echo"
+
+    override fun shouldUseAlbumFolder(): Boolean =
+        settings.getBoolean(SettingKeys.A_FOLDER) ?: false
 }

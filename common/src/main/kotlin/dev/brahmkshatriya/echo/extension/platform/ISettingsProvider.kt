@@ -18,4 +18,5 @@ interface ISettingsProvider {
     fun getFallbackLyricsExtensionId(): String
 
     fun shouldPrefixTrackNumbers(): Boolean
+    fun shouldUseAlbumFolder(): Boolean
 }

@@ -1,10 +1,12 @@
 package dev.brahmkshatriya.echo.extension.platform
 
 import android.os.FileObserver
+import dev.brahmkshatriya.echo.extension.EchoDirectories
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackManifest
+import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,9 +26,11 @@ import java.io.File
  *   tracks/    — `{Artist} - {Title}_{sanitizedTrackId}.{ext}`
  *   playlists/ — `{extensionId}_{sanitizedContextId}.json`
  */
-class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
+class AndroidManifestStore(
+    private val echoRoot: File,
+    private val directories: EchoDirectories
+) : IManifestStore {
 
-    override val tracksDir: File = File(echoRoot, "tracks").apply { mkdirs() }
     private val playlistsDir: File = File(echoRoot, "playlists").apply { mkdirs() }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -84,7 +88,7 @@ class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
 
     override fun trackExists(extensionId: String, trackId: String): Boolean {
         val idSuffix = "_${EDLUtils.illegalReplace(trackId)}"
-        return tracksDir.listFiles { f ->
+        return directories.tracks.listFiles { f ->
             f.nameWithoutExtension.endsWith(idSuffix)
                 && f.extension in AUDIO_EXTENSIONS
                 && f.length() > 0
@@ -118,8 +122,23 @@ class AndroidManifestStore(private val echoRoot: File) : IManifestStore {
         val referencedKeys = _manifests.value.values
             .flatMap { m -> m.tracks.map { it.trackId } }
             .toSet()
-        tracksDir.listFiles()?.forEach { file ->
+        directories.tracks.listFiles()?.forEach { file ->
             if (file.nameWithoutExtension !in referencedKeys) file.delete()
+        }
+    }
+
+    override fun saveTrackMetadata(metadata: TrackMetadata) {
+        val fileName = EDLUtils.illegalReplace("${metadata.extensionId}_${metadata.trackId}") + ".json"
+        File(directories.metadata, fileName).writeText(metadata.toJson())
+    }
+
+    override fun loadTrackMetadata(extensionId: String, trackId: String): TrackMetadata? {
+        val fileName = EDLUtils.illegalReplace("${extensionId}_${trackId}") + ".json"
+        val file = File(directories.metadata, fileName)
+        return if (file.exists()) {
+            runCatching { TrackMetadata.fromJson(file.readText()) }.getOrNull()
+        } else {
+            null
         }
     }
 

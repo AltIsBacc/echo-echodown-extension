@@ -10,12 +10,14 @@ import dev.brahmkshatriya.echo.common.models.ImageHolder.Companion.toImageHolder
 import dev.brahmkshatriya.echo.common.models.Lyrics
 import dev.brahmkshatriya.echo.common.models.Progress
 import dev.brahmkshatriya.echo.common.models.Track
+import dev.brahmkshatriya.echo.extension.EchoDirectories
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.getExtension
 import dev.brahmkshatriya.echo.extension.HttpStreamUtil
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils.illegalReplace
 import dev.brahmkshatriya.echo.extension.utils.OggCoverHelper
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
+import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
@@ -27,7 +29,7 @@ import java.io.File
 
 /**
  * Step 2 processor: embed ID3 / Vorbis / MP4 metadata and cover art via FFmpeg,
- * then rename the file to the canonical `{Artist} - {Title}_{trackKey}.{ext}` form.
+ * then rename the file to the canonical `{Title}.{ext}` form.
  *
  * After tagging, [IManifestStore.recordTrackInManifest] is called to persist the
  * track reference so the playlist manifest stays up-to-date.
@@ -36,8 +38,9 @@ class TagProcessor(
     private val codecEngine: ICodecEngine,
     private val settings: ISettingsProvider,
     private val manifestStore: IManifestStore,
+    private val directories: EchoDirectories,
     private val musicExtensions: () -> List<MusicExtension>,
-    private val outputDir: () -> File,
+    private val outputDir: (DownloadContext) -> File,
     private val isVideo: () -> Boolean
 ) : ITask {
 
@@ -86,11 +89,12 @@ class TagProcessor(
             )
         }
 
+        // Save track metadata
+        manifestStore.saveTrackMetadata(TrackMetadata.fromTrack(context.track, context.extensionId))
+
         progressFlow.emit(Progress(4, 4))
         tagged
     }
-
-    // ── FFmpeg tagging ────────────────────────────────────────────────────────
 
     private suspend fun ffmpegTag(
         file: File,
@@ -172,17 +176,11 @@ class TagProcessor(
         if (file.delete()) outputFile.renameTo(file)
         coverFile?.delete()
 
-        // Rename to canonical stable form: "{Artist} - {Title}_{trackId}.{ext}"
-        val artists = track.artists.joinToString(", ") { illegalReplace(it.name) }.ifBlank { "Unknown Artist" }
-        val title = illegalReplace(track.title).ifBlank { track.id }
-        val trackId = illegalReplace(track.id)
-        val destDir = outputDir()
+        // Rename to canonical stable form: "{Title}.{ext}" with collision handling
+        val sanitizedTitle = illegalReplace(track.title).ifBlank { track.id }
+        val destDir = outputDir(context)
         destDir.mkdirs()
-        val stableFile = File(destDir, "$artists - ${title}_${trackId}.$ext")
-        if (!file.renameTo(stableFile)) {
-            file.copyTo(stableFile, overwrite = true)
-            file.delete()
-        }
+        val stableFile = MergeProcessor.getUniqueFile(destDir, sanitizedTitle, ext, file)
         return stableFile
     }
 

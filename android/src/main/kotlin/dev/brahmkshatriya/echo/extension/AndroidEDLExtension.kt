@@ -35,10 +35,12 @@ class AndroidEDLExtension : EDLExtension() {
     }
 
     private val androidManifestStore: AndroidManifestStore by lazy {
-        AndroidManifestStore(File(contextApp.cacheDir, "Echo"))
+        val echoRoot = File(contextApp.cacheDir, "Echo")
+        val dirs = EchoDirectories { getBaseOutputDir() }
+        AndroidManifestStore(echoRoot, dirs)
     }
 
-    override fun getOutputDir(): File =
+    override fun getBaseOutputDir(): File =
         Environment.getExternalStoragePublicDirectory(
             when (androidSettings.getDownloadFolder()) {
                 "music"    -> Environment.DIRECTORY_MUSIC
@@ -88,7 +90,7 @@ class AndroidEDLExtension : EDLExtension() {
                 SettingSwitch(
                     "Put in Album folder", SettingKeys.A_FOLDER,
                     "Put songs inside album folder when downloaded as single", false
-                ) // not implemented yet
+                )
             )
         ),
         SettingCategory(

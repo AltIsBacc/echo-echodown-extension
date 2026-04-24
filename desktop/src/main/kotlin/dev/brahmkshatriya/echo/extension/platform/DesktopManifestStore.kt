@@ -1,8 +1,10 @@
 package dev.brahmkshatriya.echo.extension.platform
 
+import dev.brahmkshatriya.echo.extension.EchoDirectories
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackManifest
+import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,9 +25,10 @@ import java.util.concurrent.TimeUnit
  * Uses [WatchService] to detect filesystem changes under [playlistsDir].
  * The watching loop runs on a coroutine in [scope].
  */
-class DesktopManifestStore(private val playlistsDir: File) : IManifestStore {
-
-    override val tracksDir: File = File(playlistsDir.parent, "tracks").apply { mkdirs() }
+class DesktopManifestStore(
+    private val playlistsDir: File,
+    private val directories: EchoDirectories
+) : IManifestStore {
 
     private val _manifests = MutableStateFlow<Map<String, DownloadManifest>>(emptyMap())
     override val manifests: StateFlow<Map<String, DownloadManifest>> = _manifests.asStateFlow()
@@ -90,7 +93,7 @@ class DesktopManifestStore(private val playlistsDir: File) : IManifestStore {
 
     override fun trackExists(extensionId: String, trackId: String): Boolean {
         val idSuffix = "_${DownloadManifest.sanitize(trackId)}"
-        return tracksDir.listFiles { f ->
+        return directories.tracks.listFiles { f ->
             f.nameWithoutExtension.endsWith(idSuffix)
                 && f.extension in AUDIO_EXTENSIONS
                 && f.length() > 0
@@ -124,8 +127,23 @@ class DesktopManifestStore(private val playlistsDir: File) : IManifestStore {
         val referencedKeys = _manifests.value.values
             .flatMap { m -> m.tracks.map { it.trackId } }
             .toSet()
-        tracksDir.listFiles()?.forEach { file ->
+        directories.tracks.listFiles()?.forEach { file ->
             if (file.nameWithoutExtension !in referencedKeys) file.delete()
+        }
+    }
+
+    override fun saveTrackMetadata(metadata: TrackMetadata) {
+        val fileName = DownloadManifest.sanitize("${metadata.extensionId}_${metadata.trackId}") + ".json"
+        File(directories.metadata, fileName).writeText(metadata.toJson())
+    }
+
+    override fun loadTrackMetadata(extensionId: String, trackId: String): TrackMetadata? {
+        val fileName = DownloadManifest.sanitize("${extensionId}_${trackId}") + ".json"
+        val file = File(directories.metadata, fileName)
+        return if (file.exists()) {
+            runCatching { TrackMetadata.fromJson(file.readText()) }.getOrNull()
+        } else {
+            null
         }
     }
 

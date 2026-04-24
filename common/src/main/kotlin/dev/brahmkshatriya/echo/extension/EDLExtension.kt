@@ -66,6 +66,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
     protected lateinit var codecEngine: ICodecEngine
     protected lateinit var manifestStore: IManifestStore
     protected lateinit var settingsProvider: ISettingsProvider
+    protected lateinit var directories: EchoDirectories
 
     protected lateinit var mergeProcessor: MergeProcessor
     protected lateinit var tagProcessor: TagProcessor
@@ -97,14 +98,15 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         codecEngine = codec
         manifestStore = store
         settingsProvider = settings
+        directories = EchoDirectories { getBaseOutputDir() }
         mergeProcessor = MergeProcessor(codecEngine, settingsProvider, ::isVideo)
         tagProcessor = TagProcessor(
-            codecEngine, settingsProvider, manifestStore,
+            codecEngine, settingsProvider, manifestStore, directories,
             { musicExtensionList },
-            { getOutputDir() },
+            { ctx -> getOutputDir(ctx) },
             ::isVideo
         )
-        
+
         store.start()
 
         downloadRegistry.register("http",   HttpDownloader())
@@ -114,6 +116,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         taskRegistry.register(
             LyricsTask(
                 settings         = settingsProvider,
+                directories      = directories,
                 musicExtensions  = { musicExtensionList },
                 lyricsExtensions = { lyricsExtensionList }
             )
@@ -148,9 +151,9 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
             throw ClientException.NotSupported("Live streams aren't supported")
         }
 
-        val tempFile = File(
-            manifestStore.tracksDir,
-            "tmp_${DownloadManifest.trackKey(context.extensionId, context.track.id)}"
+        val tempFile = File.createTempFile(
+            "echo_tmp_",
+            DownloadManifest.trackKey(context.extensionId, context.track.id)
         )
 
         val rawFile = downloadRegistry.download(progressFlow, context, source, tempFile)
@@ -200,7 +203,10 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         return tagProcessor.execute(progressFlow, context, file)
     }
 
-    abstract fun getOutputDir(): File
+    fun getOutputDir(context: DownloadContext): File =
+        directories.outputFor(context, settingsProvider.shouldUseAlbumFolder())
+
+    abstract fun getBaseOutputDir(): File
 
     companion object {
         fun List<Extension<*>>.getExtension(id: String?) = firstOrNull { it.id == id }

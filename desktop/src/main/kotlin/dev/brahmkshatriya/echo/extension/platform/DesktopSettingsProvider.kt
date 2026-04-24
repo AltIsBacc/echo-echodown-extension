@@ -16,4 +16,5 @@ class DesktopSettingsProvider : ISettingsProvider {
     override fun getDownloadFolder(): String = "download"
     override fun shouldPrefixTrackNumbers(): Boolean = false
     override fun getSubfolder(): String = "Echo/"
+    override fun shouldUseAlbumFolder(): Boolean = false
 }

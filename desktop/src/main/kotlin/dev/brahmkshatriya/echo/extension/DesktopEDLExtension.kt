@@ -1,6 +1,5 @@
 package dev.brahmkshatriya.echo.extension
 
-import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
 import dev.brahmkshatriya.echo.extension.platform.DesktopManifestStore
 import dev.brahmkshatriya.echo.extension.platform.DesktopSettingsProvider
 import dev.brahmkshatriya.echo.extension.platform.ProcessCodecEngine
@@ -12,13 +11,15 @@ import java.io.File
 class DesktopEDLExtension : EDLExtension() {
 
     override suspend fun onInitialize() {
-        val playlistsDir = File(getOutputDir(), "playlists")
-        val store = DesktopManifestStore(playlistsDir)
+        val baseDir = getBaseOutputDir()
+        val playlistsDir = File(baseDir, "playlists")
+        val dirs = EchoDirectories { getBaseOutputDir() }
+        val store = DesktopManifestStore(playlistsDir, dirs)
 
-        initPlatform(ProcessCodecEngine, store, settings)
+        initPlatform(ProcessCodecEngine, store, DesktopSettingsProvider())
     }
 
-    override fun getOutputDir(): File {
+    override fun getBaseOutputDir(): File {
         val settings = DesktopSettingsProvider()
         val userHome = System.getProperty("user.home")
         val baseDir = File(userHome, "Downloads")
