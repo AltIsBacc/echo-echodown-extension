@@ -22,7 +22,7 @@ import dev.brahmkshatriya.echo.common.providers.MusicExtensionsProvider
 import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
-import dev.brahmkshatriya.echo.extension.pipeline.DownloadPipeline
+import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.pipeline.DownloadRegistry
 import dev.brahmkshatriya.echo.extension.pipeline.ManifestManager
 import dev.brahmkshatriya.echo.extension.pipeline.TaskRegistry
@@ -75,9 +75,6 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         DownloadRegistry(settingsProvider)
     }
 
-    private val pipeline: DownloadPipeline by lazy {
-        DownloadPipeline(downloadRegistry, taskRegistry)
-    }
     private val manifestManager: ManifestManager by lazy {
         ManifestManager(manifestStore)
     }
@@ -150,11 +147,14 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         if (source is Streamable.Source.Http && source.isLive) {
             throw ClientException.NotSupported("Live streams aren't supported")
         }
+
         val tempFile = File(
             manifestStore.tracksDir,
-            "tmp_${dev.brahmkshatriya.echo.extension.models.DownloadManifest.trackKey(context.extensionId, context.track.id)}"
+            "tmp_${DownloadManifest.trackKey(context.extensionId, context.track.id)}"
         )
-        return pipeline.execute(progressFlow, context, source, tempFile)
+
+        val rawFile = downloadRegistry.download(progressFlow, context, source, tempFile)
+        return taskRegistry.executeAll(progressFlow, context, rawFile)
     }
 
     private suspend fun resolveTracksFromItem(
