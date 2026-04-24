@@ -66,7 +66,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
     protected lateinit var codecEngine: ICodecEngine
     protected lateinit var manifestStore: IManifestStore
     protected lateinit var settingsProvider: ISettingsProvider
-    protected lateinit var directories: EchoDirectories
+    protected lateinit var directories: EDLDirectories
 
     protected lateinit var mergeProcessor: MergeProcessor
     protected lateinit var tagProcessor: TagProcessor
@@ -98,7 +98,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         codecEngine = codec
         manifestStore = store
         settingsProvider = settings
-        directories = EchoDirectories { getBaseOutputDir() }
+        directories = EDLDirectories { getBaseOutputDir() } { getPrivateOutputDir() }
         mergeProcessor = MergeProcessor(codecEngine, settingsProvider, ::isVideo)
         tagProcessor = TagProcessor(
             codecEngine, settingsProvider, manifestStore, directories,
@@ -207,6 +207,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         directories.outputFor(context, settingsProvider.shouldUseAlbumFolder())
 
     abstract fun getBaseOutputDir(): File
+    abstract fun getPrivateOutputDir(): File
 
     companion object {
         fun List<Extension<*>>.getExtension(id: String?) = firstOrNull { it.id == id }

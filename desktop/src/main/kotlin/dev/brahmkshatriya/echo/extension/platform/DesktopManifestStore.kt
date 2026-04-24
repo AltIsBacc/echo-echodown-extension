@@ -1,6 +1,6 @@
 package dev.brahmkshatriya.echo.extension.platform
 
-import dev.brahmkshatriya.echo.extension.EchoDirectories
+import dev.brahmkshatriya.echo.extension.EDLDirectories
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackManifest
@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
  */
 class DesktopManifestStore(
     private val playlistsDir: File,
-    private val directories: EchoDirectories
+    private val directories: EDLDirectories
 ) : IManifestStore {
 
     private val _manifests = MutableStateFlow<Map<String, DownloadManifest>>(emptyMap())

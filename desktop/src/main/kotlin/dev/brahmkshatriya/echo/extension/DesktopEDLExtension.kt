@@ -13,7 +13,7 @@ class DesktopEDLExtension : EDLExtension() {
     override suspend fun onInitialize() {
         val baseDir = getBaseOutputDir()
         val playlistsDir = File(baseDir, "playlists")
-        val dirs = EchoDirectories { getBaseOutputDir() }
+        val dirs = EDLDirectories { getBaseOutputDir() }
         val store = DesktopManifestStore(playlistsDir, dirs)
 
         initPlatform(ProcessCodecEngine, store, DesktopSettingsProvider())
@@ -25,4 +25,6 @@ class DesktopEDLExtension : EDLExtension() {
         val baseDir = File(userHome, "Downloads")
         return File(baseDir, settings.getSubfolder())
     }
+
+    override fun getPrivateOutputDir(): File = getBaseOutputDir()
 }

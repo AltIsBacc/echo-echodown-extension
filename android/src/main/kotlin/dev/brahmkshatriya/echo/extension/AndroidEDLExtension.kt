@@ -36,7 +36,7 @@ class AndroidEDLExtension : EDLExtension() {
 
     private val androidManifestStore: AndroidManifestStore by lazy {
         val echoRoot = File(contextApp.cacheDir, "Echo")
-        val dirs = EchoDirectories { getBaseOutputDir() }
+        val dirs = EDLDirectories { getBaseOutputDir() }
         AndroidManifestStore(echoRoot, dirs)
     }
 
@@ -50,6 +50,9 @@ class AndroidEDLExtension : EDLExtension() {
         ).let { base ->
             File(base, androidSettings.getSubfolder()).also { it.mkdirs() }
         }
+
+    override fun getPrivateOutputDir(): File =
+        File(contextApp.getExternalFilesDir(null), "downloads").also { it.mkdirs() }
 
     override suspend fun onInitialize() {
         initPlatform(AndroidCodecEngine, androidManifestStore, androidSettings)

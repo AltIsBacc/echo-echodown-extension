@@ -1,7 +1,7 @@
 package dev.brahmkshatriya.echo.extension.platform
 
 import android.os.FileObserver
-import dev.brahmkshatriya.echo.extension.EchoDirectories
+import dev.brahmkshatriya.echo.extension.EDLDirectories
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
@@ -28,7 +28,7 @@ import java.io.File
  */
 class AndroidManifestStore(
     private val echoRoot: File,
-    private val directories: EchoDirectories
+    private val directories: EDLDirectories
 ) : IManifestStore {
 
     private val playlistsDir: File = File(echoRoot, "playlists").apply { mkdirs() }
@@ -125,7 +125,7 @@ class AndroidManifestStore(
 
     override fun saveTrackMetadata(metadata: TrackMetadata) {
         val fileName = EDLUtils.illegalReplace("${metadata.extensionId}_${metadata.trackId}") + ".json"
-        File(directories.metadata, fileName).writeText(metadata.toJson())
+        File(directories.metadata, fileName).also { it.setWritable(true) }.writeText(metadata.toJson())
     }
 
     override fun loadTrackMetadata(extensionId: String, trackId: String): TrackMetadata? {

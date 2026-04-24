@@ -10,7 +10,7 @@ import dev.brahmkshatriya.echo.common.models.ImageHolder.Companion.toImageHolder
 import dev.brahmkshatriya.echo.common.models.Lyrics
 import dev.brahmkshatriya.echo.common.models.Progress
 import dev.brahmkshatriya.echo.common.models.Track
-import dev.brahmkshatriya.echo.extension.EchoDirectories
+import dev.brahmkshatriya.echo.extension.EDLDirectories
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.getExtension
 import dev.brahmkshatriya.echo.extension.HttpStreamUtil
@@ -39,7 +39,7 @@ class TagProcessor(
     private val codecEngine: ICodecEngine,
     private val settings: ISettingsProvider,
     private val manifestStore: IManifestStore,
-    private val directories: EchoDirectories,
+    private val directories: EDLDirectories,
     private val musicExtensions: () -> List<MusicExtension>,
     private val outputDir: (DownloadContext) -> File,
     private val isVideo: () -> Boolean

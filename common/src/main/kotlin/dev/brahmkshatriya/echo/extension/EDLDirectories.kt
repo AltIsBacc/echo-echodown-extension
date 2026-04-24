@@ -7,17 +7,20 @@ import dev.brahmkshatriya.echo.extension.utils.EDLUtils.illegalReplace
 import java.io.File
 
 /**
- * Centralized echo directory structure management.
+ * Centralized directory structure management.
  *
- * All paths are evaluated on every access via the [base] lambda,
+ * All paths are evaluated on every access via thel] lambda,
  * so settings changes (e.g. [getBaseOutputDir]) propagate automatically.
  */
-class EchoDirectories(private val base: () -> File) {
+class EDLDirectories(
+    private val publicBase: () -> File,
+    private val privateBase: () -> File
+) {
 
-    val tracks: File   get() = File(base(), "tracks").also { it.mkdirs() }
-    val albums: File   get() = File(base(), "albums").also { it.mkdirs() }
-    val metadata: File get() = File(base(), "metadata").also { it.mkdirs() }
-    val lyrics: File   get() = File(base(), "lyrics").also { it.mkdirs() }
+    val tracks: File     get() = File(publicBase(), "tracks").also { it.mkdirs() }
+    val playlists: File  get() = File(publicBase(), "playlists").also { it.mkdirs() }
+    val metadata: File   get() = File(privateBase(), "metadata").also { it.mkdirs() }
+    val lyrics: File     get() = File(privateBase(), "lyrics").also { it.mkdirs() }
 
     /**
      * Get the artist-specific track folder.
@@ -26,10 +29,10 @@ class EchoDirectories(private val base: () -> File) {
         File(tracks, illegalReplace(artist)).also { it.mkdirs() }
 
     /**
-     * Get the album-specific folder.
+     * Get the playlist-specific folder.
      */
-    fun album(title: String): File =
-        File(albums, illegalReplace(title)).also { it.mkdirs() }
+    fun trackPlaylist(title: String): File =
+        File(playlists, illegalReplace(title)).also { it.mkdirs() }
 
     /**
      * Determine the output directory for a given download context,
@@ -46,7 +49,7 @@ class EchoDirectories(private val base: () -> File) {
                 is Playlist -> illegalReplace(contextItem.title)
                 else        -> null
             }
-            if (folderName != null) return album(folderName)
+            if (folderName != null) return trackPlaylist(folderName)
         }
         val firstArtist = context.track.artists.firstOrNull()?.name ?: "Unknown Artist"
         return trackArtist(firstArtist)
