@@ -9,7 +9,7 @@ import java.io.File
 /**
  * Centralized directory structure management.
  *
- * All paths are evaluated on every access via thel] lambda,
+ * All paths are evaluated on every access via the param lambdas,
  * so settings changes (e.g. [getBaseOutputDir]) propagate automatically.
  */
 class EDLDirectories(

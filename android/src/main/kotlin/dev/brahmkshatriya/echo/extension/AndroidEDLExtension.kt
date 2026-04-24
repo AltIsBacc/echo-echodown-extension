@@ -36,8 +36,7 @@ class AndroidEDLExtension : EDLExtension() {
 
     private val androidManifestStore: AndroidManifestStore by lazy {
         val echoRoot = File(contextApp.cacheDir, "Echo")
-        val dirs = EDLDirectories { getBaseOutputDir() }
-        AndroidManifestStore(echoRoot, dirs)
+        AndroidManifestStore(echoRoot, directories)
     }
 
     override fun getBaseOutputDir(): File =

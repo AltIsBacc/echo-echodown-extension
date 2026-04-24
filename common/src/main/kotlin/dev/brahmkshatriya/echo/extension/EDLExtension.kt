@@ -66,12 +66,15 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
     protected lateinit var codecEngine: ICodecEngine
     protected lateinit var manifestStore: IManifestStore
     protected lateinit var settingsProvider: ISettingsProvider
-    protected lateinit var directories: EDLDirectories
 
     protected lateinit var mergeProcessor: MergeProcessor
     protected lateinit var tagProcessor: TagProcessor
 
     protected val taskRegistry = TaskRegistry()
+    protected val directories: EDLDirectories by lazy {
+        EDLDirectories(::getBaseOutputDir, ::getPrivateOutputDir)
+    }
+
     protected val downloadRegistry: DownloadRegistry by lazy {
         DownloadRegistry(settingsProvider)
     }
@@ -98,7 +101,6 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         codecEngine = codec
         manifestStore = store
         settingsProvider = settings
-        directories = EDLDirectories { getBaseOutputDir() } { getPrivateOutputDir() }
         mergeProcessor = MergeProcessor(codecEngine, settingsProvider, ::isVideo)
         tagProcessor = TagProcessor(
             codecEngine, settingsProvider, manifestStore, directories,
