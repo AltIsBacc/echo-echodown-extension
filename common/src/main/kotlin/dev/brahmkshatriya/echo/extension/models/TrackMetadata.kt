@@ -17,10 +17,6 @@ data class TrackMetadata(
     val album: String?,
     val releaseDate: String?,
     val genres: List<String>,
-    val isrc: String?,
-    val discNumber: Long?,
-    val trackNumber: Long?,
-    val durationMs: Long?,
     val savedAt: Long  // epoch ms
 ) {
 
@@ -32,10 +28,6 @@ data class TrackMetadata(
         .put("album", album)
         .put("releaseDate", releaseDate)
         .put("genres", JSONArray(genres))
-        .put("isrc", isrc)
-        .put("discNumber", discNumber)
-        .put("trackNumber", trackNumber)
-        .put("durationMs", durationMs)
         .put("savedAt", savedAt)
         .toString(2)
 
@@ -56,10 +48,6 @@ data class TrackMetadata(
                 album = root.optString("album").takeUnless { it.isEmpty() },
                 releaseDate = root.optString("releaseDate").takeUnless { it.isEmpty() },
                 genres = genres,
-                isrc = root.optString("isrc").takeUnless { it.isEmpty() },
-                discNumber = root.optLong("discNumber").takeUnless { root.isNull("discNumber") },
-                trackNumber = root.optLong("trackNumber").takeUnless { root.isNull("trackNumber") },
-                durationMs = root.optLong("durationMs").takeUnless { root.isNull("durationMs") },
                 savedAt = root.getLong("savedAt")
             )
         }
@@ -72,10 +60,6 @@ data class TrackMetadata(
             album = track.album?.title,
             releaseDate = track.releaseDate?.toString(),
             genres = track.genres,
-            isrc = track.isrc,
-            discNumber = track.albumDiscNumber,
-            trackNumber = track.albumOrderNumber,
-            durationMs = track.duration,
             savedAt = System.currentTimeMillis()
         )
     }

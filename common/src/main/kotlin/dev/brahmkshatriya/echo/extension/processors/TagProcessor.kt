@@ -26,6 +26,8 @@ import dev.brahmkshatriya.echo.extension.platform.ITask
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 
 /**
@@ -93,6 +95,7 @@ class TagProcessor(
                 trackKey = DownloadManifest.trackKey(context.extensionId, context.track.id),
                 sortOrder = context.sortOrder
             )
+            writeContextMetadata(context)
         }
 
         // Save track metadata
@@ -205,6 +208,34 @@ class TagProcessor(
             coverFile.delete()
             null
         }
+    }
+
+    /**
+     * Write (or overwrite) metadata.json inside [EDLDirectories.contextDirFor].
+     *
+     * Format: context id, extensionId, title, type, lastSynced, and tracks list
+     * with trackKey + sortOrder per entry.
+     */
+    private fun writeContextMetadata(context: DownloadContext) {
+        val contextItem = context.context ?: return
+        val dir = directories.contextDirFor(context) ?: return
+        val manifest = manifestStore.loadManifest(context.extensionId, contextItem.id) ?: return
+
+        val tracksArray = JSONArray(manifest.tracks.mapIndexed { idx, t ->
+            JSONObject()
+                .put("trackKey", t.trackId)
+                .put("sortOrder", t.sortOrder ?: idx)
+        })
+        val json = JSONObject()
+            .put("id", contextItem.id)
+            .put("extensionId", context.extensionId)
+            .put("title", contextItem.title)
+            .put("type", manifest.type.name)
+            .put("lastSynced", manifest.lastSynced)
+            .put("tracks", tracksArray)
+            .toString(2)
+
+        File(dir, "metadata.json").writeText(json)
     }
 
     companion object {

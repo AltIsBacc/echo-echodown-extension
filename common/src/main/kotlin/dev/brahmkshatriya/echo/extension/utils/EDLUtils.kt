@@ -1,6 +1,8 @@
 package dev.brahmkshatriya.echo.extension.utils
 
+import dev.brahmkshatriya.echo.common.models.Album
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
+import dev.brahmkshatriya.echo.common.models.Radio
 import dev.brahmkshatriya.echo.common.models.Streamable
 import dev.brahmkshatriya.echo.extension.models.DownloadManifest
 import dev.brahmkshatriya.echo.extension.models.TrackQuality
@@ -44,7 +46,8 @@ object EDLUtils {
         selectQuality(quality) { it.quality }
 
     fun EchoMediaItem.toManifestType(): DownloadManifest.ContextType = when (this) {
-        is dev.brahmkshatriya.echo.common.models.Album -> DownloadManifest.ContextType.ALBUM
-        else -> DownloadManifest.ContextType.PLAYLIST
+        is Album    -> DownloadManifest.ContextType.ALBUM
+        is Radio    -> DownloadManifest.ContextType.RADIO
+        else        -> DownloadManifest.ContextType.PLAYLIST
     }
 }

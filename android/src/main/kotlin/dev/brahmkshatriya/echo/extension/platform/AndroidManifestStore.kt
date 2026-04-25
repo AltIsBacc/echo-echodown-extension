@@ -19,19 +19,23 @@ import java.io.File
 /**
  * Android implementation of [IManifestStore].
  *
- * Uses [FileObserver] to detect changes under [playlistsDir] and keeps an
+ * Uses [FileObserver] to detect changes under albums/, playlists/, and radios/ and keeps an
  * in-memory [StateFlow] map up to date.
  *
  * Directory layout under [echoRoot]:
- *   tracks/    — `{Artist} - {Title}_{sanitizedTrackId}.{ext}`
- *   playlists/ — `{extensionId}_{sanitizedContextId}.json`
+ *   tracks/    — `{Artist}/{Title}.{ext}`
+ *   albums/    — `{Album Title}/metadata.json`
+ *   playlists/ — `{Playlist Title}/metadata.json`
+ *   radios/    — `{Radio Title}/metadata.json`
  */
 class AndroidManifestStore(
     private val echoRoot: File,
     private val directories: EDLDirectories
 ) : IManifestStore {
 
+    private val albumsDir: File    = File(echoRoot, "albums").apply { mkdirs() }
     private val playlistsDir: File = File(echoRoot, "playlists").apply { mkdirs() }
+    private val radiosDir: File    = File(echoRoot, "radios").apply { mkdirs() }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -39,8 +43,8 @@ class AndroidManifestStore(
     override val manifests: StateFlow<Map<String, DownloadManifest>> = _manifests.asStateFlow()
 
     @Suppress("DEPRECATION")
-    private val observer = object : FileObserver(
-        playlistsDir.absolutePath,
+    private fun makeObserver(dir: File) = object : FileObserver(
+        dir.absolutePath,
         CREATE or DELETE or MOVED_FROM or MOVED_TO or CLOSE_WRITE
     ) {
         override fun onEvent(event: Int, path: String?) {
@@ -50,25 +54,42 @@ class AndroidManifestStore(
         }
     }
 
+    private val observers = listOf(
+        makeObserver(albumsDir),
+        makeObserver(playlistsDir),
+        makeObserver(radiosDir)
+    )
+
     override fun start() {
         scope.launch { reloadAll() }
-        observer.startWatching()
+        observers.forEach { it.startWatching() }
     }
 
     override fun stop() {
-        observer.stopWatching()
+        observers.forEach { it.stopWatching() }
     }
 
     private fun reloadAll() {
-        val loaded = playlistsDir.listFiles { f -> f.extension == "json" }
-            ?.mapNotNull { f -> runCatching { DownloadManifest.fromJson(f.readText()) }.getOrNull() }
-            ?.associateBy { it.fileName() }
-            ?: emptyMap()
+        val loaded = listOf(albumsDir, playlistsDir, radiosDir)
+            .flatMap { dir ->
+                dir.walkTopDown()
+                    .filter { it.isFile && it.extension == "json" && it.name == "metadata.json" }
+                    .mapNotNull { f -> runCatching { DownloadManifest.fromJson(f.readText()) }.getOrNull() }
+            }
+            .associateBy { it.fileName() }
         _manifests.value = loaded
     }
 
+    /** Route to the correct subfolder based on [manifest.type]. */
+    private fun dirFor(type: ContextType): File = when (type) {
+        ContextType.ALBUM    -> albumsDir
+        ContextType.PLAYLIST -> playlistsDir
+        ContextType.RADIO    -> radiosDir
+    }
+
     override fun saveManifest(manifest: DownloadManifest) {
-        File(playlistsDir, manifest.fileName()).writeText(manifest.toJson())
+        val dir = File(dirFor(manifest.type), manifest.fileName().removeSuffix(".json")).apply { mkdirs() }
+        File(dir, manifest.fileName()).writeText(manifest.toJson())
         _manifests.value = _manifests.value.toMutableMap().apply {
             put(manifest.fileName(), manifest)
         }
