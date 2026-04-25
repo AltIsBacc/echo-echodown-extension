@@ -1,8 +1,8 @@
 package dev.brahmkshatriya.echo.extension.platform
 
 import dev.brahmkshatriya.echo.extension.EDLDirectories
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackManifest
 import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import kotlinx.coroutines.CoroutineScope
@@ -30,8 +30,8 @@ class DesktopManifestStore(
     private val directories: EDLDirectories
 ) : IManifestStore {
 
-    private val _manifests = MutableStateFlow<Map<String, DownloadManifest>>(emptyMap())
-    override val manifests: StateFlow<Map<String, DownloadManifest>> = _manifests.asStateFlow()
+    private val _manifests = MutableStateFlow<Map<String, ContextMetadata>>(emptyMap())
+    override val manifests: StateFlow<Map<String, ContextMetadata>> = _manifests.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var watchService: WatchService? = null
@@ -66,13 +66,13 @@ class DesktopManifestStore(
 
     private fun reloadAll() {
         val loaded = playlistsDir.listFiles { f -> f.extension == "json" }
-            ?.mapNotNull { f -> runCatching { DownloadManifest.fromJson(f.readText()) }.getOrNull() }
+            ?.mapNotNull { f -> runCatching { ContextMetadata.fromJson(f.readText()) }.getOrNull() }
             ?.associateBy { it.fileName() }
             ?: emptyMap()
         _manifests.value = loaded
     }
 
-    override fun saveManifest(manifest: DownloadManifest) {
+    override fun saveManifest(manifest: ContextMetadata) {
         File(playlistsDir, manifest.fileName()).writeText(manifest.toJson())
         _manifests.value = _manifests.value.toMutableMap().apply {
             put(manifest.fileName(), manifest)
@@ -83,8 +83,8 @@ class DesktopManifestStore(
      * Non-suspend: reads from the in-memory map — no async I/O involved.
      * See [IManifestStore.loadManifest] for the rationale.
      */
-    override fun loadManifest(extensionId: String, contextId: String): DownloadManifest? {
-        val name = DownloadManifest(
+    override fun loadManifest(extensionId: String, contextId: String): ContextMetadata? {
+        val name = ContextMetadata(
             id = contextId, extensionId = extensionId, title = "",
             type = ContextType.PLAYLIST, lastSynced = 0, tracks = emptyList()
         ).fileName()
@@ -92,7 +92,7 @@ class DesktopManifestStore(
     }
 
     override fun trackExists(extensionId: String, trackId: String): Boolean {
-        val idSuffix = "_${DownloadManifest.sanitize(trackId)}"
+        val idSuffix = "_${ContextMetadata.sanitize(trackId)}"
         return directories.tracks.listFiles { f ->
             f.nameWithoutExtension.endsWith(idSuffix)
                 && f.extension in AUDIO_EXTENSIONS
@@ -115,7 +115,7 @@ class DesktopManifestStore(
         val updated = existing?.copy(
             lastSynced = now,
             tracks = existing.tracks + TrackManifest(trackKey, sortOrder, now)
-        ) ?: DownloadManifest(
+        ) ?: ContextMetadata(
             id = contextId, extensionId = extensionId, title = contextTitle,
             type = contextType, lastSynced = now,
             tracks = listOf(TrackManifest(trackKey, sortOrder, now))
@@ -133,12 +133,12 @@ class DesktopManifestStore(
     }
 
     override fun saveTrackMetadata(metadata: TrackMetadata) {
-        val fileName = DownloadManifest.sanitize("${metadata.extensionId}_${metadata.trackId}") + ".json"
+        val fileName = ContextMetadata.sanitize("${metadata.extensionId}_${metadata.trackId}") + ".json"
         File(directories.metadata, fileName).writeText(metadata.toJson())
     }
 
     override fun loadTrackMetadata(extensionId: String, trackId: String): TrackMetadata? {
-        val fileName = DownloadManifest.sanitize("${extensionId}_${trackId}") + ".json"
+        val fileName = ContextMetadata.sanitize("${extensionId}_${trackId}") + ".json"
         val file = File(directories.metadata, fileName)
         return if (file.exists()) {
             runCatching { TrackMetadata.fromJson(file.readText()) }.getOrNull()

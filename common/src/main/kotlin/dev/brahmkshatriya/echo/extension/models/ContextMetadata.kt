@@ -1,25 +1,17 @@
 package dev.brahmkshatriya.echo.extension.models
 
+import dev.brahmkshatriya.echo.common.models.DownloadContext
 import org.json.JSONArray
 import org.json.JSONObject
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils
 
 /**
- * Persisted playlist/album manifest.
+ * Persisted playlist/album/radio metadata.
  *
- * File layout:
- *   {echoRoot}/playlists/{extensionId}_{sanitizedContextId}.json  ← playlist manifest
- *   {echoRoot}/metadata/{trackKey}.json                           ← per-track metadata
- *   {echoRoot}/tracks/{Artist} - {Title}_{sanitizedTrackId}.{ext} ← audio file
- *   {echoRoot}/lyrics/{trackKey}.lrc | .txt                       ← lyrics file
- *
- * Reference chain:
- *   playlists/{fileName}.json → TrackManifest.trackId → metadata/{trackKey}.json
- *                                             → tracks/{fileName}_{trackKey}.{ext}
- *                                             → lyrics/{trackKey}.lrc
+ * Stored in {playlists,albums,radios}/{sanitizedTitle}/metadata.json
  */
-data class DownloadManifest(
-    val id: String,           // e.g. "spotify:playlist:abc"
+data class ContextMetadata(
+    val contextId: String,    // e.g. "spotify:playlist:abc"
     val extensionId: String,
     val title: String,
     val type: ContextType,
@@ -28,11 +20,14 @@ data class DownloadManifest(
 ) {
     enum class ContextType { PLAYLIST, ALBUM, RADIO }
 
-    /** Stable filename for this manifest on disk. */
-    fun fileName() = "${extensionId}_${EDLUtils.illegalReplace(id)}.json"
+    data class TrackManifest(
+        val trackId: String,  // stable key: "{extensionId}_{sanitizedTrackId}"
+        val sortOrder: Int?,
+        val addedAt: Long     // epoch ms
+    )
 
     fun toJson(): String = JSONObject()
-        .put("id", id)
+        .put("contextId", contextId)
         .put("extensionId", extensionId)
         .put("title", title)
         .put("type", type.name)
@@ -46,7 +41,7 @@ data class DownloadManifest(
         .toString()
 
     companion object {
-        fun fromJson(json: String): DownloadManifest {
+        fun fromJson(json: String): ContextMetadata {
             val root = JSONObject(json)
             val tracks = root.getJSONArray("tracks").let { arr ->
                 (0 until arr.length()).map { i ->
@@ -58,8 +53,8 @@ data class DownloadManifest(
                     )
                 }
             }
-            return DownloadManifest(
-                id = root.getString("id"),
+            return ContextMetadata(
+                contextId = root.getString("contextId"),
                 extensionId = root.getString("extensionId"),
                 title = root.getString("title"),
                 type = ContextType.valueOf(root.getString("type")),
@@ -68,11 +63,17 @@ data class DownloadManifest(
             )
         }
 
-        /**
-         * Build a stable, filesystem-safe track key
-         * used as the primary identifierbin manifests and as the suffix of audio filenames.
-         */
-        fun trackKey(extensionId: String, trackId: String): String =
-            "${extensionId}_${EDLUtils.illegalReplace(trackId)}"
+        fun fromDownloadContext(context: DownloadContext): ContextMetadata = ContextMetadata(
+            contextId = context.context!!.id,
+            extensionId = context.extensionId,
+            title = context.context!!.title,
+            type = context.contextType.name
+            lastSynced = System.currentTimeMillis(),
+            tracks = listOf(TrackManifest(
+                trackId = BaseManifestStore.trackKey(context.extensionId, context.track.id),
+                sortOrder = context.sortOrder,
+                addedAt = System.currentTimeMillis()
+            ))
+        )
     }
 }

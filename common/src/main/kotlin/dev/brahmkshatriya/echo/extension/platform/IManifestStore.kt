@@ -1,7 +1,7 @@
 package dev.brahmkshatriya.echo.extension.platform
 
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import kotlinx.coroutines.flow.StateFlow
 
@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
  */
 interface IManifestStore {
 
-    /** Live, in-memory view of every loaded manifest keyed by [DownloadManifest.fileName]. */
-    val manifests: StateFlow<Map<String, DownloadManifest>>
+    /** Live, in-memory view of every loaded manifest keyed by ContextMetadata's title. */
+    val manifests: StateFlow<Map<String, ContextMetadata>>
 
     /** Begin watching the playlists directory for changes and load existing manifests. */
     fun start()
@@ -23,7 +23,7 @@ interface IManifestStore {
     fun stop()
 
     /** Write [manifest] to disk (and update the in-memory map immediately). */
-    fun saveManifest(manifest: DownloadManifest)
+    fun saveManifest(manifest: ContextMetadata)
 
     /**
      * Look up a manifest by [extensionId] + [contextId].
@@ -32,7 +32,7 @@ interface IManifestStore {
      * file-system watcher), so there is no async I/O at the point of lookup.
      * This keeps call-sites clean and avoids spurious coroutine overhead.
      */
-    fun loadManifest(extensionId: String, contextId: String): DownloadManifest?
+    fun loadManifest(extensionId: String, contextId: String): ContextMetadata?
 
     /**
      * Returns true if a file whose name ends with `_{sanitizedTrackId}.{ext}`

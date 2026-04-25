@@ -22,10 +22,11 @@ import dev.brahmkshatriya.echo.common.providers.MusicExtensionsProvider
 import dev.brahmkshatriya.echo.extension.downloaders.HttpDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.StreamDownloader
 import dev.brahmkshatriya.echo.extension.downloaders.FFmpegDownloader
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
 import dev.brahmkshatriya.echo.extension.pipeline.DownloadRegistry
 import dev.brahmkshatriya.echo.extension.pipeline.ManifestManager
 import dev.brahmkshatriya.echo.extension.pipeline.TaskRegistry
+import dev.brahmkshatriya.echo.extension.platform.BaseManifestStore
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
@@ -155,7 +156,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
 
         val tempFile = File.createTempFile(
             "echo_tmp_",
-            DownloadManifest.trackKey(context.extensionId, context.track.id)
+            BaseManifestStore.trackKey(context.extensionId, context.track.id)
         )
 
         val rawFile = downloadRegistry.download(progressFlow, context, source, tempFile)

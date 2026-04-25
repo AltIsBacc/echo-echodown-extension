@@ -4,6 +4,7 @@ import dev.brahmkshatriya.echo.common.models.Album
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.Playlist
 import dev.brahmkshatriya.echo.common.models.Radio
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils.illegalReplace
 import java.io.File
 
@@ -55,7 +56,25 @@ class EDLDirectories(
             is Album    -> albums
             is Radio    -> radios
             is Playlist -> playlists
-            else        -> return null
+            else        -> throw IllegalArgumentException("Unsupported context type: ${contextItem::class}")
+        }
+        return File(parent, sanitizedTitle).also { it.mkdirs() }
+    }
+
+    /**
+     * Returns the named subfolder for a context under the matching type directory.
+     * Used only for writing metadata.json — never for audio output.
+     *
+     *   albums/{sanitizedTitle}/
+     *   playlists/{sanitizedTitle}/
+     *   radios/{sanitizedTitle}/
+     */
+    fun contextDirFor(context: ContextMetadata): File? {
+        val sanitizedTitle = illegalReplace(context.title)
+        val parent = when (context.type) {
+            ContextMetadata.ContextType.ALBUM -> albums
+            ContextMetadata.ContextType.PLAYLIST -> playlists
+            ContextMetadata.ContextType.RADIO -> radios
         }
         return File(parent, sanitizedTitle).also { it.mkdirs() }
     }

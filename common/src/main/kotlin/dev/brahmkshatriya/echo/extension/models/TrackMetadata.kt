@@ -7,7 +7,7 @@ import org.json.JSONObject
 /**
  * Persisted metadata for a single downloaded track.
  *
- * Stored in metadata/{extensionId}_{trackId}.json
+ * Stored in metadata/{extensionId}_{sanitizedTrackId}.json
  */
 data class TrackMetadata(
     val trackId: String,
