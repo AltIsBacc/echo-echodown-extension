@@ -17,7 +17,7 @@ import dev.brahmkshatriya.echo.extension.HttpStreamUtil
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils.illegalReplace
 import dev.brahmkshatriya.echo.extension.utils.OggCoverHelper
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
 import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import dev.brahmkshatriya.echo.extension.platform.ICodecEngine
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
@@ -92,7 +92,7 @@ class TagProcessor(
                 contextType = EDLUtils.run {
                     contextItem.toManifestType()
                 },
-                trackKey = DownloadManifest.trackKey(context.extensionId, context.track.id),
+                trackKey = BaseManifestStore.trackKey(context.extensionId, context.track.id),
                 sortOrder = context.sortOrder
             )
             writeContextMetadata(context)

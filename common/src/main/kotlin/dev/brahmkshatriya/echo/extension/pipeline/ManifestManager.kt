@@ -3,7 +3,7 @@ package dev.brahmkshatriya.echo.extension.pipeline
 import dev.brahmkshatriya.echo.common.models.DownloadContext
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils.toManifestType
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
 import dev.brahmkshatriya.echo.extension.platform.IManifestStore
 
 /**
@@ -39,7 +39,7 @@ class ManifestManager(private val store: IManifestStore) {
                         contextId = contextItem.id,
                         contextTitle = contextItem.title,
                         contextType = contextItem.toManifestType(),
-                        trackKey = DownloadManifest.trackKey(ctx.extensionId, ctx.track.id),
+                        trackKey = BaseManifestStore.trackKey(ctx.extensionId, ctx.track.id),
                         sortOrder = ctx.sortOrder
                     )
                 }

@@ -3,8 +3,8 @@ package dev.brahmkshatriya.echo.extension.platform
 import android.os.FileObserver
 import dev.brahmkshatriya.echo.extension.EDLDirectories
 import dev.brahmkshatriya.echo.extension.utils.EDLUtils
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest.ContextType
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata.ContextType
 import dev.brahmkshatriya.echo.extension.models.TrackManifest
 import dev.brahmkshatriya.echo.extension.models.TrackMetadata
 import kotlinx.coroutines.CoroutineScope
@@ -39,8 +39,8 @@ class AndroidManifestStore(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val _manifests = MutableStateFlow<Map<String, DownloadManifest>>(emptyMap())
-    override val manifests: StateFlow<Map<String, DownloadManifest>> = _manifests.asStateFlow()
+    private val _manifests = MutableStateFlow<Map<String, ContextMetadata>>(emptyMap())
+    override val manifests: StateFlow<Map<String, ContextMetadata>> = _manifests.asStateFlow()
 
     @Suppress("DEPRECATION")
     private fun makeObserver(dir: File) = object : FileObserver(
@@ -74,7 +74,7 @@ class AndroidManifestStore(
             .flatMap { dir ->
                 dir.walkTopDown()
                     .filter { it.isFile && it.extension == "json" && it.name == "metadata.json" }
-                    .mapNotNull { f -> runCatching { DownloadManifest.fromJson(f.readText()) }.getOrNull() }
+                    .mapNotNull { f -> runCatching { ContextMetadata.fromJson(f.readText()) }.getOrNull() }
             }
             .associateBy { it.fileName() }
         _manifests.value = loaded
@@ -87,7 +87,7 @@ class AndroidManifestStore(
         ContextType.RADIO    -> radiosDir
     }
 
-    override fun saveManifest(manifest: DownloadManifest) {
+    override fun saveManifest(manifest: ContextMetadata) {
         val dir = File(dirFor(manifest.type), manifest.fileName().removeSuffix(".json")).apply { mkdirs() }
         File(dir, manifest.fileName()).writeText(manifest.toJson())
         _manifests.value = _manifests.value.toMutableMap().apply {
@@ -99,8 +99,8 @@ class AndroidManifestStore(
      * Non-suspend: reads from the in-memory map — no async I/O involved.
      * See [IManifestStore.loadManifest] for the rationale.
      */
-    override fun loadManifest(extensionId: String, contextId: String): DownloadManifest? {
-        val name = DownloadManifest(
+    override fun loadManifest(extensionId: String, contextId: String): ContextMetadata? {
+        val name = ContextMetadata(
             id = contextId, extensionId = extensionId, title = "",
             type = ContextType.PLAYLIST, lastSynced = 0, tracks = emptyList()
         ).fileName()
@@ -127,7 +127,7 @@ class AndroidManifestStore(
         val updated = existing?.copy(
             lastSynced = now,
             tracks = existing.tracks + TrackManifest(trackKey, sortOrder, now)
-        ) ?: DownloadManifest(
+        ) ?: ContextMetadata(
             id = contextId, extensionId = extensionId, title = contextTitle,
             type = contextType, lastSynced = now,
             tracks = listOf(TrackManifest(trackKey, sortOrder, now))

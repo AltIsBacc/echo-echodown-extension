@@ -4,7 +4,7 @@ import dev.brahmkshatriya.echo.common.models.Album
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
 import dev.brahmkshatriya.echo.common.models.Radio
 import dev.brahmkshatriya.echo.common.models.Streamable
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
 import dev.brahmkshatriya.echo.extension.models.TrackQuality
 
 /**
@@ -45,9 +45,9 @@ object EDLUtils {
     fun List<Streamable.Source>.select(quality: TrackQuality): Streamable.Source =
         selectQuality(quality) { it.quality }
 
-    fun EchoMediaItem.toManifestType(): DownloadManifest.ContextType = when (this) {
-        is Album    -> DownloadManifest.ContextType.ALBUM
-        is Radio    -> DownloadManifest.ContextType.RADIO
-        else        -> DownloadManifest.ContextType.PLAYLIST
+    fun EchoMediaItem.toManifestType(): ContextMetadata.ContextType = when (this) {
+        is Album    -> ContextMetadata.ContextType.ALBUM
+        is Radio    -> ContextMetadata.ContextType.RADIO
+        else        -> ContextMetadata.ContextType.PLAYLIST
     }
 }

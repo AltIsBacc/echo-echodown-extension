@@ -12,7 +12,7 @@ import dev.brahmkshatriya.echo.common.models.Track
 import dev.brahmkshatriya.echo.extension.EDLDirectories
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.get
 import dev.brahmkshatriya.echo.extension.EDLExtension.Companion.getExtension
-import dev.brahmkshatriya.echo.extension.models.DownloadManifest
+import dev.brahmkshatriya.echo.extension.models.ContextMetadata
 import dev.brahmkshatriya.echo.extension.platform.ISettingsProvider
 import dev.brahmkshatriya.echo.extension.platform.ITask
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +42,7 @@ class LyricsTask(
         val extension = musicExtensions().getExtension(context.extensionId)
         val lyrics = getActualLyrics(context, extension) ?: return file
 
-        val trackKey = DownloadManifest.trackKey(context.extensionId, context.track.id)
+        val trackKey = BaseManifestStore.trackKey(context.extensionId, context.track.id)
         when (val lyric = lyrics.lyrics) {
             is Lyrics.Timed -> {
                 val lrc = lyric.list.joinToString("\n") { item ->
