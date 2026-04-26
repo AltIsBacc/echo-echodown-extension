@@ -12,7 +12,6 @@ import dev.brahmkshatriya.echo.common.settings.SettingTextInput
 import dev.brahmkshatriya.echo.common.settings.Settings
 import dev.brahmkshatriya.echo.extension.models.SettingKeys
 import dev.brahmkshatriya.echo.extension.platform.AndroidCodecEngine
-import dev.brahmkshatriya.echo.extension.platform.AndroidManifestStore
 import dev.brahmkshatriya.echo.extension.platform.AndroidSettingsProvider
 import java.io.File
 
@@ -34,11 +33,6 @@ class AndroidEDLExtension : EDLExtension() {
         AndroidSettingsProvider(_settings ?: error("Settings have not been loaded"))
     }
 
-    private val androidManifestStore: AndroidManifestStore by lazy {
-        val echoRoot = File(contextApp.cacheDir, "Echo")
-        AndroidManifestStore(echoRoot, directories)
-    }
-
     override fun getBaseOutputDir(): File =
         Environment.getExternalStoragePublicDirectory(
             when (androidSettings.getDownloadFolder()) {
@@ -54,7 +48,7 @@ class AndroidEDLExtension : EDLExtension() {
         File(contextApp.getExternalFilesDir(null), "downloads").also { it.mkdirs() }
 
     override suspend fun onInitialize() {
-        initPlatform(AndroidCodecEngine, androidManifestStore, androidSettings)
+        initPlatform(AndroidCodecEngine, androidSettings)
     }
 
     override suspend fun getSettingItems(): List<Setting> = mutableListOf(

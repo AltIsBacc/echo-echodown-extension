@@ -4,8 +4,10 @@ import dev.brahmkshatriya.echo.common.models.Album
 import dev.brahmkshatriya.echo.common.models.EchoMediaItem
 import dev.brahmkshatriya.echo.common.models.Radio
 import dev.brahmkshatriya.echo.common.models.Streamable
+import dev.brahmkshatriya.echo.extension.EDLDirectories
 import dev.brahmkshatriya.echo.extension.models.ContextMetadata
 import dev.brahmkshatriya.echo.extension.models.TrackQuality
+import java.io.File
 
 /**
  * Pure utility functions shared across the entire common module.
@@ -50,4 +52,23 @@ object EDLUtils {
         is Radio    -> ContextMetadata.ContextType.RADIO
         else        -> ContextMetadata.ContextType.PLAYLIST
     }
+
+    /**
+     * Build a stable, filesystem-safe track key
+     * used as the primary identifier in manifests and as the suffix of audio filenames.
+     */
+    fun trackKey(extensionId: String, trackId: String): String =
+        "${illegalReplace(extensionId)}_${illegalReplace(trackId)}"
+
+    /**
+     * Returns true if a file whose name ends with `_{sanitizedTrackId}.{ext}`
+     * already exists in the tracks directory and has non-zero size.
+     * Used to skip re-downloading a track that was already fetched.
+     */
+    fun trackExists(directories: EDLDirectories, extensionId: String, trackId: String): Boolean =
+        directories.tracks.walkTopDown().any {
+            it.isFile &&
+            it.nameWithoutExtension.endsWith(trackKey(extensionId, trackId)) &&
+            it.length() > 0
+        }
 }

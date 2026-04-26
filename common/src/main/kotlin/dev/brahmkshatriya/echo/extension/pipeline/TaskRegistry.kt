@@ -9,14 +9,6 @@ import java.io.File
 /**
  * Ordered list of [ITask] instances that form the post-download pipeline.
  *
- * Platform subclasses register tasks once at startup:
- *
- * ```kotlin
- * taskRegistry.register(MergeTask(codecEngine, settings))
- * taskRegistry.register(TagTask(codecEngine, settings, musicExtensions, lyricsExtensions))
- * taskRegistry.register(LyricsTask(settings, lyricsExtensions))
- * ```
- *
  * Adding a new pipeline step is just implementing [ITask] and calling [register].
  */
 class TaskRegistry {

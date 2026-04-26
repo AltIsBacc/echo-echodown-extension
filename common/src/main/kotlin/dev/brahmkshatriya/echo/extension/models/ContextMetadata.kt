@@ -11,7 +11,7 @@ import dev.brahmkshatriya.echo.extension.utils.EDLUtils
  * Stored in {playlists,albums,radios}/{sanitizedTitle}/metadata.json
  */
 data class ContextMetadata(
-    val contextId: String,    // e.g. "spotify:playlist:abc"
+    val id: String,    // e.g. "spotify:playlist:abc"
     val extensionId: String,
     val title: String,
     val type: ContextType,
@@ -27,7 +27,7 @@ data class ContextMetadata(
     )
 
     fun toJson(): String = JSONObject()
-        .put("contextId", contextId)
+        .put("id", id)
         .put("extensionId", extensionId)
         .put("title", title)
         .put("type", type.name)
@@ -54,7 +54,7 @@ data class ContextMetadata(
                 }
             }
             return ContextMetadata(
-                contextId = root.getString("contextId"),
+                id = root.getString("id"),
                 extensionId = root.getString("extensionId"),
                 title = root.getString("title"),
                 type = ContextType.valueOf(root.getString("type")),
@@ -64,13 +64,13 @@ data class ContextMetadata(
         }
 
         fun fromDownloadContext(context: DownloadContext): ContextMetadata = ContextMetadata(
-            contextId = context.context!!.id,
+            id = context.context!!.id,
             extensionId = context.extensionId,
             title = context.context!!.title,
-            type = context.contextType.name
+            type = context.context!!.toManifestType()
             lastSynced = System.currentTimeMillis(),
             tracks = listOf(TrackManifest(
-                trackId = BaseManifestStore.trackKey(context.extensionId, context.track.id),
+                trackId = EDLUtils.trackKey(context.extensionId, context.track.id),
                 sortOrder = context.sortOrder,
                 addedAt = System.currentTimeMillis()
             ))

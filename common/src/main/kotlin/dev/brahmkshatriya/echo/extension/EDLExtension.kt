@@ -65,7 +65,6 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         get() = settingsProvider.getConcurrentDownloads()
 
     protected lateinit var codecEngine: ICodecEngine
-    protected lateinit var manifestStore: IManifestStore
     protected lateinit var settingsProvider: ISettingsProvider
 
     protected lateinit var mergeProcessor: MergeProcessor
@@ -81,7 +80,7 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
     }
 
     private val manifestManager: ManifestManager by lazy {
-        ManifestManager(manifestStore)
+        ManifestManager(directories)
     }
 
     @Volatile
@@ -96,21 +95,17 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
      */
     protected fun initPlatform(
         codec: ICodecEngine,
-        store: IManifestStore,
         settings: ISettingsProvider
     ) {
         codecEngine = codec
-        manifestStore = store
         settingsProvider = settings
         mergeProcessor = MergeProcessor(codecEngine, settingsProvider, ::isVideo)
         tagProcessor = TagProcessor(
-            codecEngine, settingsProvider, manifestStore, directories,
+            codecEngine, settingsProvider, directories,
             { musicExtensionList },
             { ctx -> getOutputDir(ctx) },
             ::isVideo
         )
-
-        store.start()
 
         downloadRegistry.register("http",   HttpDownloader())
         downloadRegistry.register("stream", StreamDownloader())
@@ -194,17 +189,13 @@ abstract class EDLExtension : DownloadClient, MusicExtensionsProvider, LyricsExt
         progressFlow: MutableStateFlow<Progress>,
         context: DownloadContext,
         files: List<File>
-    ): File {
-        return mergeProcessor.execute(progressFlow, context, files.first())
-    }
+    ): File = mergeProcessor.execute(progressFlow, context, files.first())
 
     override suspend fun tag(
         progressFlow: MutableStateFlow<Progress>,
         context: DownloadContext,
         file: File
-    ): File {
-        return tagProcessor.execute(progressFlow, context, file)
-    }
+    ): File = tagProcessor.execute(progressFlow, context, file)
 
     fun getOutputDir(context: DownloadContext): File =
         directories.outputFor(context, settingsProvider.shouldUseAlbumFolder())

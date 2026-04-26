@@ -40,7 +40,6 @@ import java.io.File
 class TagProcessor(
     private val codecEngine: ICodecEngine,
     private val settings: ISettingsProvider,
-    private val manifestStore: IManifestStore,
     private val directories: EDLDirectories,
     private val musicExtensions: () -> List<MusicExtension>,
     private val outputDir: (DownloadContext) -> File,
@@ -85,21 +84,47 @@ class TagProcessor(
         // Record this track in the manifest so playlist metadata stays consistent
         val contextItem = context.context
         if (contextItem != null) {
-            manifestStore.recordTrackInManifest(
-                extensionId = context.extensionId,
-                contextId = contextItem.id,
-                contextTitle = contextItem.title,
-                contextType = EDLUtils.run {
-                    contextItem.toManifestType()
-                },
-                trackKey = BaseManifestStore.trackKey(context.extensionId, context.track.id),
-                sortOrder = context.sortOrder
-            )
-            writeContextMetadata(context)
-        }
+            // Write TrackMetadata directly
+            File(directories.metadata, "${EDLUtils.trackKey(context.extensionId, context.track.id)}.json")
+                .writeText(TrackMetadata.fromTrack(context.track, context.extensionId).toJson())
 
-        // Save track metadata
-        manifestStore.saveTrackMetadata(TrackMetadata.fromTrack(context.track, context.extensionId))
+            // Upsert ContextMetadata to disk
+            val contextDir = directories.contextDirFor(context)
+            val metadataFile = File(contextDir, "metadata.json")
+            val existingMetadata = if (metadataFile.exists()) {
+                ContextMetadata.fromJson(metadataFile.readText())
+            } else null
+
+            if (existingMetadata != null && existingMetadata.tracks.any { it.trackId == EDLUtils.trackKey(context.extensionId, context.track.id) }) {
+                // Track already exists, do nothing
+            } else {
+                val now = System.currentTimeMillis()
+                val updatedTracks = (existingMetadata?.tracks ?: emptyList()) +
+                    ContextMetadata.TrackManifest(
+                        trackId = EDLUtils.trackKey(context.extensionId, context.track.id),
+                        sortOrder = context.sortOrder,
+                        addedAt = now
+                    )
+                val updatedMetadata = existingMetadata?.copy(
+                    lastSynced = now,
+                    tracks = updatedTracks
+                ) ?: ContextMetadata(
+                    id = context.context!!.id,
+                    extensionId = context.extensionId,
+                    title = context.context!!.title,
+                    type = context.context!!.toManifestType(),
+                    lastSynced = now,
+                    tracks = listOf(
+                        ContextMetadata.TrackManifest(
+                            trackId = EDLUtils.trackKey(context.extensionId, context.track.id),
+                            sortOrder = context.sortOrder,
+                            addedAt = now
+                        )
+                    )
+                )
+                metadataFile.writeText(updatedMetadata.toJson())
+            }
+        }
 
         progressFlow.emit(Progress(5, 5))
         stableFile
@@ -216,27 +241,6 @@ class TagProcessor(
      * Format: context id, extensionId, title, type, lastSynced, and tracks list
      * with trackKey + sortOrder per entry.
      */
-    private fun writeContextMetadata(context: DownloadContext) {
-        val contextItem = context.context ?: return
-        val dir = directories.contextDirFor(context) ?: return
-        val manifest = manifestStore.loadManifest(context.extensionId, contextItem.id) ?: return
-
-        val tracksArray = JSONArray(manifest.tracks.mapIndexed { idx, t ->
-            JSONObject()
-                .put("trackKey", t.trackId)
-                .put("sortOrder", t.sortOrder ?: idx)
-        })
-        val json = JSONObject()
-            .put("id", contextItem.id)
-            .put("extensionId", context.extensionId)
-            .put("title", contextItem.title)
-            .put("type", manifest.type.name)
-            .put("lastSynced", manifest.lastSynced)
-            .put("tracks", tracksArray)
-            .toString(2)
-
-        File(dir, "metadata.json").writeText(json)
-    }
 
     companion object {
         // Album cache is per-JVM process; size 50 is sufficient for typical playlist sizes.
